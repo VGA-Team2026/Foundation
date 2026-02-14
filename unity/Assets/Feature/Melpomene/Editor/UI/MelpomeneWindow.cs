@@ -21,6 +21,23 @@ namespace Melpomene
 
         private List<MelpomeneTicket> filteredTickets = new List<MelpomeneTicket>();
 
+        public void InitializeForMusa()
+        {
+            if (!MelpomeneManager.Instance.IsInitialized)
+                MelpomeneManager.Instance.Initialize();
+            RefreshFilteredTickets();
+        }
+
+        public void DrawContent()
+        {
+            DrawToolbar();
+            EditorGUILayout.Space();
+            DrawFilters();
+            EditorGUILayout.Space();
+            DrawTicketList();
+            DrawFooter();
+        }
+
         [MenuItem("Tools/Melpomene/Ticket List")]
         public static void ShowWindow()
         {
