@@ -12,6 +12,7 @@ using System.Net.Http;
 
 namespace Network
 {
+    [Foundation.Threading.ThreadingModel(Foundation.Threading.ThreadingType.MultiThreaded, "バックグラウンドHTTPワーカー")]
     public class TaskRequestWorker
     {
         //処理中かどうか

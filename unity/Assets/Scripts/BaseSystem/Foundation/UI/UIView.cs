@@ -5,6 +5,7 @@ namespace UISystem
 {
     [RequireComponent(typeof(CanvasGroup))]
     [RequireComponent(typeof(RectTransform))]
+    [Foundation.Threading.ThreadingModel(Foundation.Threading.ThreadingType.MainThreadOnly, "UI描画はメインスレッド専用")]
     public class UIView : MonoBehaviour
     {
         [SerializeField] private bool _isActive;

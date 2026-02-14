@@ -9,6 +9,7 @@ namespace Network
     /// <summary>
     /// リクエスト処理クラス
     /// </summary>
+    [Foundation.Threading.ThreadingModel(Foundation.Threading.ThreadingType.MultiThreaded, "スレッドプールでHTTP通信")]
     public class WebRequest
     {
         //データ処理デリゲート

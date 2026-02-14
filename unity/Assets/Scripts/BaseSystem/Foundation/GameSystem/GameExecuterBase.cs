@@ -1,9 +1,11 @@
-﻿using UnityEngine;
+﻿using Foundation.Threading;
+using UnityEngine;
 
 /// <summary>
 /// シーン読み込み直後や解放直前に処理をかけるスクリプト
 /// TODO: 何かしたい時にこのクラスを継承して呼び出してください。検索と利便性を兼ねてMonoBehaviourが継承されています。
 /// </summary>
+[ThreadingModel(ThreadingType.MainThreadOnly, "シーンライフサイクル管理")]
 public abstract class GameExecuterBase : MonoBehaviour
 {
     // これで、AwakeとStartの前になる

@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Cysharp.Threading.Tasks;
 
+[Foundation.Threading.ThreadingModel(Foundation.Threading.ThreadingType.AsyncCapable, "非同期ファイルI/O")]
 class LocalData
 {
     /// <summary>

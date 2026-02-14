@@ -7,6 +7,7 @@ using UnityEngine.AddressableAssets;
 /// <summary>
 /// シーン起動用
 /// </summary>
+[Foundation.Threading.ThreadingModel(Foundation.Threading.ThreadingType.MainThreadOnly, "シーン起動管理")]
 public class SceneLauncher : MonoBehaviour
 {
     //デバッグモード有効時はシーン移動用のメニューをオーバーライドする
