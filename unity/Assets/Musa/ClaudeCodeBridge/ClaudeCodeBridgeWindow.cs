@@ -16,6 +16,8 @@ namespace ClaudeCodeBridge
         private bool isConnected = false;
         private string serverHost = "localhost";
         private int serverPort = 3456;
+        private GUIStyle statusStyle;
+        private GUIStyle taskStatusStyle;
 
         // Issue関連
         private List<GitHubIssue> issues = new List<GitHubIssue>();
@@ -77,10 +79,8 @@ namespace ClaudeCodeBridge
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
             // 接続状態
-            var statusStyle = new GUIStyle(EditorStyles.label)
-            {
-                normal = { textColor = isConnected ? Color.green : Color.red }
-            };
+            if (statusStyle == null) statusStyle = new GUIStyle(EditorStyles.label);
+            statusStyle.normal.textColor = isConnected ? Color.green : Color.red;
             GUILayout.Label(isConnected ? "● Connected" : "● Disconnected", statusStyle, GUILayout.Width(100));
 
             // サーバー設定
@@ -206,8 +206,9 @@ namespace ClaudeCodeBridge
                     _ => Color.white
                 };
 
-                var style = new GUIStyle(EditorStyles.label) { normal = { textColor = statusColor } };
-                EditorGUILayout.LabelField($"[{task.status.ToUpper()}]", style, GUILayout.Width(100));
+                if (taskStatusStyle == null) taskStatusStyle = new GUIStyle(EditorStyles.label);
+                taskStatusStyle.normal.textColor = statusColor;
+                EditorGUILayout.LabelField($"[{task.status.ToUpper()}]", taskStatusStyle, GUILayout.Width(100));
                 EditorGUILayout.LabelField(TruncateString(task.command, 40));
 
                 if (task.status == "running")

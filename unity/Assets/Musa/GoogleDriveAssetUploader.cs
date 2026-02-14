@@ -277,7 +277,11 @@ public class GoogleDriveAssetUploader : EditorWindow
             _statusMessage = "公開設定中...";
             _progress = 0.50f;
             Repaint();
-            await SetFilePublicAsync(uploadedFileId);
+            if (!await SetFilePublicAsync(uploadedFileId))
+            {
+                _statusMessage = "公開設定に失敗しました";
+                return;
+            }
 
             // Step 5: カタログ取得/新規作成
             _statusMessage = "カタログ取得中...";

@@ -514,6 +514,7 @@ public class GoogleDriveAssetImporter : EditorWindow
             }
             else
             {
+                _accessToken = _tokenData.access_token;
                 _authMethod = "認証済み (token)";
                 return true;
             }

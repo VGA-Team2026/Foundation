@@ -1378,7 +1378,8 @@ public static class UnityCommandServer
             Directory.CreateDirectory(eurekaLogDir);
         }
 
-        string fileName = $"eureka_{report.logCode}_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+        string safeLogCode = Path.GetFileName(report.logCode ?? "unknown");
+        string fileName = $"eureka_{safeLogCode}_{DateTime.Now:yyyyMMdd_HHmmss}.json";
         string filePath = Path.Combine(eurekaLogDir, fileName);
 
         string json = JsonUtility.ToJson(report, true);
@@ -1395,13 +1396,20 @@ public static class UnityCommandServer
         // NOTE: ログファイルパスを構築
         string unityProjectPath = Path.GetDirectoryName(Application.dataPath);
         string projectRoot = Path.GetDirectoryName(unityProjectPath);
-        string logFilePath = Path.Combine(projectRoot, report.logFilePath);
+        string logFilePath = Path.GetFullPath(Path.Combine(projectRoot, report.logFilePath ?? ""));
+        if (!logFilePath.StartsWith(projectRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.LogWarning("[UnityCommandServer] Invalid logFilePath (outside project root)");
+            return;
+        }
+
+        string safeLogCode = Path.GetFileName(report.logCode ?? "unknown");
 
         // NOTE: MelpomeneInputWindowを開く
         Melpomene.MelpomeneInputWindow.ShowWindowForEureka(
             "", // videoUrl - ビルド時は動画なし
             "", // logUrl - ローカルパスのみ
-            report.logCode,
+            safeLogCode,
             "", // videoLocalPath - ビルド時は動画なし
             logFilePath, // logLocalPath
             true // isGitHubIssueMode

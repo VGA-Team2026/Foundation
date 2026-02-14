@@ -28,7 +28,7 @@ namespace AssetManagerEditor
     public class AssetListResponse
     {
         public string project_id;
-        public List<AssetInfo> assets;
+        public List<AssetInfo> assets = new List<AssetInfo>();
         public int count;
     }
 

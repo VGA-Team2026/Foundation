@@ -235,6 +235,7 @@ namespace ClaudeCodeBridge
         private async Task<string> GetAsync(string endpoint)
         {
             using var request = UnityWebRequest.Get(baseUrl + endpoint);
+            request.timeout = 30;
             var operation = request.SendWebRequest();
 
             while (!operation.isDone)
@@ -253,6 +254,7 @@ namespace ClaudeCodeBridge
         private async Task<string> PostAsync(string endpoint, string jsonBody)
         {
             using var request = new UnityWebRequest(baseUrl + endpoint, "POST");
+            request.timeout = 30;
             var bodyBytes = Encoding.UTF8.GetBytes(jsonBody);
             request.uploadHandler = new UploadHandlerRaw(bodyBytes);
             request.downloadHandler = new DownloadHandlerBuffer();

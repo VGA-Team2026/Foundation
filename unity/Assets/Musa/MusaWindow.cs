@@ -556,13 +556,19 @@ public class MusaWindow : EditorWindow
         Repaint();
         try
         {
-            isBridgeConnected = await bridgeClient.CheckHealthAsync();
-            bridgeStatusMessage = isBridgeConnected ? "Connected to server" : "Server not available";
-            if (isBridgeConnected) { LoadIssues(); LoadTasks(); }
+            try
+            {
+                isBridgeConnected = await bridgeClient.CheckHealthAsync();
+                bridgeStatusMessage = isBridgeConnected ? "Connected to server" : "Server not available";
+                if (isBridgeConnected) { LoadIssues(); LoadTasks(); }
+            }
+            catch (Exception e) { isBridgeConnected = false; bridgeStatusMessage = $"Connection failed: {e.Message}"; }
         }
-        catch (Exception e) { isBridgeConnected = false; bridgeStatusMessage = $"Connection failed: {e.Message}"; }
-        isBridgeLoading = false;
-        Repaint();
+        finally
+        {
+            isBridgeLoading = false;
+            Repaint();
+        }
     }
 
     private void RefreshBridgeData()

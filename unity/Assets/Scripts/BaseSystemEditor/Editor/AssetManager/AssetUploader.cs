@@ -192,7 +192,7 @@ namespace AssetManagerEditor
                 return false;
             }
 
-            if (!_packagePath.EndsWith(".unitypackage"))
+            if (!_packagePath.EndsWith(".unitypackage", StringComparison.OrdinalIgnoreCase))
             {
                 _statusMessage = "Error: File must be a .unitypackage";
                 return false;
@@ -304,10 +304,8 @@ namespace AssetManagerEditor
         {
             try
             {
-                byte[] fileData = File.ReadAllBytes(_packagePath);
-                long totalBytes = fileData.Length;
-
-                using (var content = new ByteArrayContent(fileData))
+                using (var stream = File.OpenRead(_packagePath))
+                using (var content = new StreamContent(stream))
                 {
                     content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
 
