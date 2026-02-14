@@ -46,6 +46,37 @@ namespace Melpomene
             currentWindow = window;
         }
 
+        /// <summary>
+        /// Eureka連携用ウィンドウ表示
+        /// </summary>
+        public static void ShowWindowForEureka(string videoUrl, string logUrl, string logCode, string videoLocalPath, string logLocalPath, bool isGitHubIssueMode)
+        {
+            if (currentWindow != null)
+            {
+                currentWindow.Close();
+            }
+
+            var window = CreateInstance<MelpomeneInputWindow>();
+            window.titleContent = new GUIContent("Melpomene - Eureka Report");
+            window.minSize = new Vector2(400, 500);
+            window.maxSize = new Vector2(600, 800);
+
+            window.ticket = MelpomeneManager.Instance.PrepareNewTicket(Vector2.zero, Vector3.zero, null);
+            window.ticket.title = $"[Eureka] {logCode}";
+            window.ticket.category = MelpomeneCategory.Bug;
+
+            var desc = $"Log Code: {logCode}";
+            if (!string.IsNullOrEmpty(logUrl)) desc += $"\nLog URL: {logUrl}";
+            if (!string.IsNullOrEmpty(logLocalPath)) desc += $"\nLog Path: {logLocalPath}";
+            if (!string.IsNullOrEmpty(videoUrl)) desc += $"\nVideo URL: {videoUrl}";
+            if (!string.IsNullOrEmpty(videoLocalPath)) desc += $"\nVideo Path: {videoLocalPath}";
+            window.ticket.description = desc;
+
+            window.position = new Rect(100, 100, 450, 550);
+            window.ShowUtility();
+            currentWindow = window;
+        }
+
         private void OnGUI()
         {
             if (ticket == null)
