@@ -4,8 +4,7 @@
     "references": [
         "GUID:570000fad695d6a4caf24264af242457",
         "GUID:6c48ff07c32e4524d91cf0cc26e301c7",
-        "GUID:f51ebe6a0ceec4240a699833d6309b23",
-        "Melpomene"
+        "GUID:f51ebe6a0ceec4240a699833d6309b23"
     ],
     "includePlatforms": [
         "Editor"
