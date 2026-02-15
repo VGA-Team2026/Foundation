@@ -1,3 +1,5 @@
 # Musa local settings (contains secrets)
 musa/melpomene/serverconf.json
 musa/melpomene/settings.local.json
+unity/Assets/Foundation/Scripts/BaseSystemEditor/Editor/Melpomene/MelpomeneConfig.asset
+unity/Assets/Feature/Melpomene/Editor/MelpomeneConfig.asset
