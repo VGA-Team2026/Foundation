@@ -159,16 +159,14 @@ public class GoogleDriveAssetUploader : EditorWindow
 
             // NOTE: 必須アセットサマリー
             int requiredTotal = 0;
-            int requiredRegistered = 0;
             foreach (var asset in _catalogCache.assets)
             {
                 if (!asset.required) continue;
                 requiredTotal++;
-                requiredRegistered++;
             }
             if (requiredTotal > 0)
             {
-                EditorGUILayout.LabelField($"必須アセット: {requiredRegistered}/{_catalogCache.assets.Length} 登録済み");
+                EditorGUILayout.LabelField($"必須アセット: {requiredTotal}/{_catalogCache.assets.Length} 件");
             }
 
             _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition, GUILayout.Height(200));
@@ -691,7 +689,6 @@ public class GoogleDriveAssetUploader : EditorWindow
     /// </summary>
     private async UniTask<string> UploadFileMultipartAsync(string filePath, string fileName, string folderId, int retryCount = 0)
     {
-        var fileContent = File.ReadAllBytes(filePath);
         var boundary = "===asset_uploader_boundary_" + Guid.NewGuid().ToString("N") + "===";
 
         // NOTE: メタデータJSON
@@ -705,7 +702,7 @@ public class GoogleDriveAssetUploader : EditorWindow
             metadataJson = $"{{\"name\":\"{EscapeJsonString(fileName)}\"}}";
         }
 
-        // NOTE: マルチパートボディを構築
+        // NOTE: マルチパートボディを構築（ストリーミング読み込みでメモリ節約）
         var bodyBuilder = new StringBuilder();
         bodyBuilder.Append($"--{boundary}\r\n");
         bodyBuilder.Append("Content-Type: application/json; charset=UTF-8\r\n");
@@ -718,6 +715,13 @@ public class GoogleDriveAssetUploader : EditorWindow
 
         var headerBytes = Encoding.UTF8.GetBytes(bodyBuilder.ToString());
         var footerBytes = Encoding.UTF8.GetBytes($"\r\n--{boundary}--");
+
+        byte[] fileContent;
+        using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+        {
+            fileContent = new byte[fs.Length];
+            await fs.ReadAsync(fileContent, 0, fileContent.Length);
+        }
 
         var requestBody = new byte[headerBytes.Length + fileContent.Length + footerBytes.Length];
         Buffer.BlockCopy(headerBytes, 0, requestBody, 0, headerBytes.Length);
@@ -1059,39 +1063,18 @@ public class GoogleDriveAssetUploader : EditorWindow
 
         try
         {
-            // NOTE: 既存ファイルを読み込んで、assetCatalogFileIdだけ更新
-            string existingJson = "{}";
+            // NOTE: 既存ファイルを読み込んでデシリアライズ→更新→シリアライズ
+            UploaderSettings existing = new UploaderSettings();
             if (File.Exists(settingsPath))
             {
-                existingJson = File.ReadAllText(settingsPath);
-            }
-
-            // NOTE: 簡易的なJSON更新（既存のキーを維持しつつassetCatalogFileIdを追加/更新）
-            if (existingJson.Contains("\"assetCatalogFileId\""))
-            {
-                // NOTE: 既存フィールドを更新
-                var startIndex = existingJson.IndexOf("\"assetCatalogFileId\"");
-                var colonIndex = existingJson.IndexOf(':', startIndex);
-                var valueStart = existingJson.IndexOf('"', colonIndex);
-                var valueEnd = existingJson.IndexOf('"', valueStart + 1);
-                existingJson = existingJson.Substring(0, valueStart + 1) +
-                               settings.assetCatalogFileId +
-                               existingJson.Substring(valueEnd);
-            }
-            else
-            {
-                // NOTE: フィールドを追加（最後の } の前に挿入）
-                var lastBrace = existingJson.LastIndexOf('}');
-                if (lastBrace >= 0)
+                try
                 {
-                    var beforeBrace = existingJson.Substring(0, lastBrace).TrimEnd();
-                    var needsComma = !beforeBrace.EndsWith("{") && !beforeBrace.EndsWith(",");
-                    existingJson = beforeBrace +
-                                   (needsComma ? ",\n" : "\n") +
-                                   $"    \"assetCatalogFileId\": \"{settings.assetCatalogFileId}\"\n" +
-                                   "}";
+                    var existingJson = File.ReadAllText(settingsPath);
+                    existing = JsonUtility.FromJson<UploaderSettings>(existingJson) ?? new UploaderSettings();
                 }
+                catch { }
             }
+            existing.assetCatalogFileId = settings.assetCatalogFileId;
 
             // NOTE: ディレクトリが存在しない場合は作成
             var dir = Path.GetDirectoryName(settingsPath);
@@ -1100,7 +1083,7 @@ public class GoogleDriveAssetUploader : EditorWindow
                 Directory.CreateDirectory(dir);
             }
 
-            File.WriteAllText(settingsPath, existingJson);
+            File.WriteAllText(settingsPath, JsonUtility.ToJson(existing, true));
             Debug.Log($"[AssetUploader] settings.jsonにassetCatalogFileIdを保存しました");
         }
         catch (Exception ex)

@@ -1122,8 +1122,17 @@ public class PackageUpdaterWindow : EditorWindow
                 }
             }
 
+            // NOTE: 書き込み前にJSONの整合性を検証
+            try { JsonUtility.FromJson<object>(json); }
+            catch (Exception validateEx)
+            {
+                Debug.LogError($"[PackageUpdater] 生成されたJSONが不正です。書き込みを中止します: {validateEx.Message}");
+                AddLog("[ERROR] JSON検証失敗: manifest.jsonへの書き込みを中止しました");
+                return;
+            }
+
             File.WriteAllText(manifestPath, json);
-            AddLog("[INFO] manifest.json \u306b\u30d0\u30fc\u30b8\u30e7\u30f3\u5236\u7d04\u3092\u4fdd\u5b58");
+            AddLog("[INFO] manifest.json にバージョン制約を保存");
         }
         catch (Exception e)
         {

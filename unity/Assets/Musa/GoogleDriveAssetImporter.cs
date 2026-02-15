@@ -958,9 +958,15 @@ public class GoogleDriveAssetImporter : EditorWindow
                 var json = File.ReadAllText(settingsPath);
                 var settings = JsonUtility.FromJson<SettingsJson>(json);
 
-                // NOTE: 認証URL（Legacy - MusaGlobalSettingsにない場合のフォールバック）
+                // NOTE: 認証URL（Legacy - MusaGlobalSettingsにない場合のフォールバック→移行）
                 _authUrl = settings?.googleAuthUrl?.Trim();
                 if (string.IsNullOrEmpty(_authUrl)) _authUrl = null;
+                if (string.IsNullOrEmpty(MusaGlobalSettings.GoogleAuthUrl) && !string.IsNullOrEmpty(_authUrl))
+                {
+                    MusaGlobalSettings.GoogleAuthUrl = _authUrl;
+                    MusaGlobalSettings.Save();
+                    Debug.Log("[AssetImporter] 認証URLをMusaGlobalSettingsに移行しました");
+                }
 
                 // NOTE: カタログFileID（MusaGlobalSettingsが空の場合のみsettings.jsonから移行）
                 if (string.IsNullOrEmpty(_catalogFileId) && !string.IsNullOrEmpty(settings?.assetCatalogFileId))

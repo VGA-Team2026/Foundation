@@ -278,7 +278,8 @@ namespace AssetManagerEditor
                 request.Headers.Add("x-api-key", _config.ApiKey);
                 request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.SendAsync(request);
+                using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(30));
+                var response = await _httpClient.SendAsync(request, cts.Token);
                 string responseBody = await response.Content.ReadAsStringAsync();
 
                 if (response.IsSuccessStatusCode)
@@ -313,7 +314,8 @@ namespace AssetManagerEditor
                     _uploadProgress = 0.5f;
                     Repaint();
 
-                    var response = await _httpClient.PutAsync(presignedUrl, content);
+                    using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(120));
+                    var response = await _httpClient.PutAsync(presignedUrl, content, cts.Token);
 
                     _uploadProgress = 0.9f;
                     Repaint();

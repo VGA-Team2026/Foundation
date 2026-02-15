@@ -378,6 +378,22 @@ namespace AssetManagerEditor
                 _downloadProgress[asset.asset_hash] = 1f;
                 Repaint();
 
+                // ハッシュ検証
+                if (!string.IsNullOrEmpty(asset.asset_hash))
+                {
+                    using (var md5 = System.Security.Cryptography.MD5.Create())
+                    using (var hashStream = File.OpenRead(downloadPath))
+                    {
+                        var hash = BitConverter.ToString(md5.ComputeHash(hashStream)).Replace("-", "").ToLowerInvariant();
+                        if (hash != asset.asset_hash.ToLowerInvariant())
+                        {
+                            Debug.LogError($"Hash mismatch for {asset.asset_name}: expected {asset.asset_hash}, got {hash}");
+                            File.Delete(downloadPath);
+                            return false;
+                        }
+                    }
+                }
+
                 // パッケージをインポート
                 AssetDatabase.ImportPackage(downloadPath, false);
 

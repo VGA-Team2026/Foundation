@@ -12,8 +12,17 @@ namespace AssetManagerEditor
         [Tooltip("Lambda APIのエンドポイントURL")]
         public string ApiEndpoint = "https://your-api.execute-api.region.amazonaws.com/dev";
 
-        [Tooltip("API Key")]
-        public string ApiKey = "";
+        [Tooltip("API Key（環境変数 ASSET_MANAGER_API_KEY を推奨）")]
+        public string ApiKey
+        {
+            get
+            {
+                var envKey = System.Environment.GetEnvironmentVariable("ASSET_MANAGER_API_KEY");
+                return !string.IsNullOrEmpty(envKey) ? envKey : _apiKey;
+            }
+            set => _apiKey = value;
+        }
+        [SerializeField] private string _apiKey = "";
 
         [Header("プロジェクト設定")]
         [Tooltip("このプロジェクトのID")]
@@ -30,8 +39,17 @@ namespace AssetManagerEditor
         [Tooltip("アップロード権限を持つユーザー名のリスト")]
         public string[] AuthorizedUploadUsers = new string[] { };
 
-        [Tooltip("アップロード権限の秘密キー（環境変数から取得推奨）")]
-        public string UploadSecretKey = "";
+        [Tooltip("アップロード権限の秘密キー（環境変数 ASSET_MANAGER_UPLOAD_KEY を推奨）")]
+        public string UploadSecretKey
+        {
+            get
+            {
+                var envKey = System.Environment.GetEnvironmentVariable("ASSET_MANAGER_UPLOAD_SECRET");
+                return !string.IsNullOrEmpty(envKey) ? envKey : _uploadSecretKey;
+            }
+            set => _uploadSecretKey = value;
+        }
+        [SerializeField] private string _uploadSecretKey = "";
 
         /// <summary>
         /// アセットの完全な展開先パスを取得
@@ -50,7 +68,7 @@ namespace AssetManagerEditor
         {
             // 環境変数から秘密キーを確認
             string envKey = System.Environment.GetEnvironmentVariable("ASSET_MANAGER_UPLOAD_KEY");
-            if (!string.IsNullOrEmpty(envKey) && envKey == UploadSecretKey)
+            if (!string.IsNullOrEmpty(envKey) && !string.IsNullOrEmpty(UploadSecretKey) && ConstantTimeEquals(envKey, UploadSecretKey))
             {
                 return true;
             }
@@ -93,6 +111,17 @@ namespace AssetManagerEditor
             }
 
             return config;
+        }
+
+        private static bool ConstantTimeEquals(string a, string b)
+        {
+            if (a.Length != b.Length) return false;
+            int diff = 0;
+            for (int i = 0; i < a.Length; i++)
+            {
+                diff |= a[i] ^ b[i];
+            }
+            return diff == 0;
         }
     }
 }
