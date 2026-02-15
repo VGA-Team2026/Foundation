@@ -6,7 +6,6 @@ using System.Linq;
 using System.Xml.Linq;
 using UnityEditor;
 using UnityEngine;
-using static CriWare.CriAtomEx;
 
 namespace FoundationUtility
 {
