@@ -1,10 +1,9 @@
 # 日次実装レビューワークフロー
 #
-# 毎日JST 4:00に実行し、前回実行以降の変更をサマライズしてSlackに投稿する
+# 毎日JST 4:00に実行し、前回実行以降の変更をサマライズしてDiscordに投稿する
 #
 # 必要なGitHub Secrets:
-#   - SLACK_BOT_TOKEN: Slack Bot Token（xoxb-から始まる、オプション）
-#   - SLACK_CHANNEL_ID: Slack投稿先チャンネルID（オプション）
+#   - DISCORD_WEBHOOK_URL: Discord Webhook URL（オプション）
 
 name: Daily Implementation Review
 
@@ -154,8 +153,8 @@ jobs:
         echo has_summary=true >> %GITHUB_OUTPUT%
         echo サマリー準備完了
 
-    # Slack通知
-    - name: Slack通知
+    # Discord通知
+    - name: Discord通知
       if: steps.prepare-summary.outputs.has_summary == 'true'
       continue-on-error: true
       shell: cmd
@@ -164,9 +163,9 @@ jobs:
         set PROJECT_ROOT=${{ github.workspace }}
         set SUMMARY_FILE=%PROJECT_ROOT%\temp_summary.txt
 
-        REM Slack Bot Tokenが設定されているか確認
-        if "%SLACK_BOT_TOKEN%"=="" (
-          echo Slack Bot Tokenが設定されていません。通知をスキップします。
+        REM Discord Webhook URLが設定されているか確認
+        if "%DISCORD_WEBHOOK_URL%"=="" (
+          echo Discord Webhook URLが設定されていません。通知をスキップします。
           exit /b 0
         )
 
@@ -176,11 +175,10 @@ jobs:
           exit /b 0
         )
 
-        REM Slack通知を送信
-        node "%PROJECT_ROOT%\script\slack-notify.js" daily-review "%SUMMARY_FILE%"
+        REM Discord通知を送信
+        node "%PROJECT_ROOT%\script\discord-notify.js" daily-review "%SUMMARY_FILE%"
       env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         GITHUB_REPOSITORY: ${{ github.repository }}
 
     # 一時ファイルのクリーンアップ

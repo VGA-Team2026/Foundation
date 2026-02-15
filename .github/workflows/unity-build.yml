@@ -8,8 +8,7 @@
 # 必要なGitHub Secrets:
 #   - UNITY_EDITOR_PATH: Unityエディタのパス（必須）
 #   - BUILD_OUTPUT_PATH: ビルド成果物の出力先パス（必須）
-#   - SLACK_BOT_TOKEN: Slack Bot Token（オプション）
-#   - SLACK_CHANNEL_ID: Slack投稿先チャンネルID（オプション）
+#   - DISCORD_WEBHOOK_URL: Discord Webhook URL（オプション）
 
 name: Unity Build
 
@@ -32,16 +31,21 @@ on:
         options:
           - Development
           - Release
+      clean_build:
+        description: 'クリーンビルド（Library削除）'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   # ビルドプロファイルを決定するジョブ
   setup:
     runs-on: [self-hosted, unity, Windows]
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix: ${{ steps.set_matrix.outputs.matrix }}
     steps:
       - name: ビルドプロファイルの決定
-        id: set-matrix
+        id: set_matrix
         shell: powershell
         run: |
           # 手動実行の場合は指定されたプロファイルを使用
@@ -86,9 +90,24 @@ jobs:
       with:
         clean: false
 
+    # スクリプトアセンブリキャッシュのクリア
+    # NOTE: asmdef構成変更時にEditorとPlayerのレイアウト不整合を防止
+    - name: スクリプトアセンブリキャッシュのクリア
+      shell: cmd
+      run: |
+        @echo off
+        set PROJECT_ROOT=${{ github.workspace }}
+        set SCRIPT_ASSEMBLIES=%PROJECT_ROOT%\unity\Library\ScriptAssemblies
+
+        if exist "%SCRIPT_ASSEMBLIES%" (
+          echo ScriptAssembliesキャッシュを削除中...
+          rmdir /s /q "%SCRIPT_ASSEMBLIES%"
+          echo 削除完了
+        )
+
     # Unity環境の検証
     - name: Unity環境の検証
-      id: validate-unity
+      id: validate_unity
       shell: cmd
       run: |
         @echo off
@@ -114,7 +133,7 @@ jobs:
 
     # 出力先パスの検証
     - name: 出力先パスの検証
-      id: validate-output
+      id: validate_output
       shell: cmd
       run: |
         @echo off
@@ -136,6 +155,23 @@ jobs:
 
         echo ✅ 出力先パス検証成功: %OUTPUT_PATH%
         echo OUTPUT_PATH=%OUTPUT_PATH% >> %GITHUB_OUTPUT%
+
+    # クリーンビルド（Libraryフォルダ削除）
+    - name: クリーンビルド（Library削除）
+      if: github.event.inputs.clean_build == 'true'
+      shell: cmd
+      run: |
+        @echo off
+        set PROJECT_ROOT=${{ github.workspace }}
+        set LIBRARY_PATH=%PROJECT_ROOT%\unity\Library
+
+        if exist "%LIBRARY_PATH%" (
+          echo クリーンビルド: Libraryフォルダを削除中...
+          rmdir /s /q "%LIBRARY_PATH%"
+          echo ✅ Libraryフォルダを削除しました
+        ) else (
+          echo Libraryフォルダは存在しません
+        )
 
     # ビルド出力ディレクトリの準備
     - name: ビルド出力ディレクトリの準備
@@ -159,47 +195,44 @@ jobs:
       run: |
         @echo off
         set PROJECT_ROOT=${{ github.workspace }}
-        set UNITY_PATH=${{ steps.validate-unity.outputs.UNITY_PATH }}
+        set UNITY_PATH=${{ steps.validate_unity.outputs.UNITY_PATH }}
         set BUILD_LOG=%PROJECT_ROOT%\build.log
         set BUILD_PROFILE=${{ matrix.build_profile }}
         set BUILD_OUTPUT=%PROJECT_ROOT%\Build\%BUILD_PROFILE%
         cd unity
 
-        echo Unityビルド開始
-        echo プロファイル: %BUILD_PROFILE%
-        echo 出力先: %BUILD_OUTPUT%
+        echo Unity build start
+        echo Profile: %BUILD_PROFILE%
+        echo Output: %BUILD_OUTPUT%
 
-        REM Unityビルドを実行
-        REM -executeMethod は静的メソッドを指定: BuildScript.PerformBuild
         "%UNITY_PATH%" -batchmode -quit -projectPath . -executeMethod BuildScript.PerformBuild -buildProfile %BUILD_PROFILE% -buildPath "%BUILD_OUTPUT%" -logFile "%BUILD_LOG%"
-        set BUILD_EXIT_CODE=%ERRORLEVEL%
-        echo build_exit_code=%BUILD_EXIT_CODE% >> %GITHUB_OUTPUT%
+        echo build_exit_code=%ERRORLEVEL% >> %GITHUB_OUTPUT%
 
-        REM ビルド結果を確認
-        if %BUILD_EXIT_CODE% neq 0 (
-          echo has_errors=true >> %GITHUB_OUTPUT%
-          echo ❌ Unityビルド失敗 (終了コード: %BUILD_EXIT_CODE%)
-        ) else (
-          REM ログでビルドエラーを確認
-          if exist "%BUILD_LOG%" (
-            findstr /c:"Build completed with a result of 'Failed'" /c:"BuildFailedException" /c:"Error building Player" "%BUILD_LOG%" >nul
-            if %ERRORLEVEL% equ 0 (
-              echo has_errors=true >> %GITHUB_OUTPUT%
-              echo ❌ ログにビルドエラーを検出
-            ) else (
-              echo has_errors=false >> %GITHUB_OUTPUT%
-              echo ✅ Unityビルド成功
-            )
-          ) else (
-            echo has_errors=unknown >> %GITHUB_OUTPUT%
-            echo ⚠️ ビルドログが見つかりません
-          )
+    # ビルド成果物の確認
+    - name: Check Build Artifact
+      id: check_artifact
+      shell: cmd
+      run: |
+        @echo off
+        set BUILD_OUTPUT=${{ github.workspace }}\Build\${{ matrix.build_profile }}
+
+        echo Checking build artifacts...
+        echo Output dir: %BUILD_OUTPUT%
+
+        if not exist "%BUILD_OUTPUT%\*.exe" (
+          echo has_errors=true>> %GITHUB_OUTPUT%
+          echo Build failed: No exe found
+          exit /b 0
         )
+
+        echo has_errors=false>> %GITHUB_OUTPUT%
+        echo Build success: exe found
+        dir "%BUILD_OUTPUT%\*.exe"
 
     # エラーログの抽出
     - name: エラーログの抽出
-      if: steps.build.outputs.has_errors == 'true'
-      id: error-log
+      if: steps.check_artifact.outputs.has_errors == 'true'
+      id: error_log
       shell: cmd
       run: |
         @echo off
@@ -233,8 +266,8 @@ jobs:
 
     # ビルド成果物をZIP化
     - name: ビルド成果物をZIP化
-      if: steps.build.outputs.has_errors == 'false'
-      id: zip-build
+      if: steps.check_artifact.outputs.has_errors == 'false'
+      id: zip_build
       shell: powershell
       run: |
         $projectRoot = "${{ github.workspace }}"
@@ -264,133 +297,102 @@ jobs:
 
     # ZIPファイルを指定パスに移動
     - name: ビルド成果物を出力先に移動
-      if: steps.build.outputs.has_errors == 'false'
+      if: steps.check_artifact.outputs.has_errors == 'false'
       shell: cmd
       run: |
         @echo off
-        set ZIP_PATH=${{ steps.zip-build.outputs.zip_path }}
-        set ZIP_NAME=${{ steps.zip-build.outputs.zip_name }}
-        set OUTPUT_PATH=${{ steps.validate-output.outputs.OUTPUT_PATH }}
+        set ZIP_PATH=${{ steps.zip_build.outputs.zip_path }}
+        set ZIP_NAME=${{ steps.zip_build.outputs.zip_name }}
+        set OUTPUT_PATH=${{ steps.validate_output.outputs.OUTPUT_PATH }}
 
-        echo ZIPファイルを出力先に移動中...
-        echo ソース: %ZIP_PATH%
-        echo 出力先: %OUTPUT_PATH%\%ZIP_NAME%
+        if not exist "%OUTPUT_PATH%" mkdir "%OUTPUT_PATH%"
 
-        REM ZIPファイルを出力先にコピー（同名は上書き）
+        echo ZIP copy to output...
+        echo Source: %ZIP_PATH%
+        echo Dest: %OUTPUT_PATH%\%ZIP_NAME%
+
         copy /Y "%ZIP_PATH%" "%OUTPUT_PATH%\%ZIP_NAME%"
 
         if %ERRORLEVEL% equ 0 (
-          echo ✅ ビルド成果物を出力先に移動しました: %OUTPUT_PATH%\%ZIP_NAME%
+          echo Copy success: %OUTPUT_PATH%\%ZIP_NAME%
         ) else (
-          echo ❌ ビルド成果物の移動に失敗しました
+          echo Copy failed
           exit /b 1
         )
 
     # ビルドサマリーの作成
-    - name: ビルドサマリーの作成
+    - name: Build Summary
       if: always()
       id: summary
       shell: cmd
       run: |
         @echo off
-        setlocal enabledelayedexpansion
-        set PROJECT_ROOT=${{ github.workspace }}
+        set HAS_ERRORS=${{ steps.check_artifact.outputs.has_errors }}
         set BUILD_PROFILE=${{ matrix.build_profile }}
-        set HAS_ERRORS=${{ steps.build.outputs.has_errors }}
         set BUILD_EXIT_CODE=${{ steps.build.outputs.build_exit_code }}
 
-        (
-          echo BUILD_SUMMARY<<EOF
-          if "%HAS_ERRORS%"=="true" (
-            echo ## ❌ Unity ビルド失敗
-            echo.
-            echo **ビルドプロファイル:** %BUILD_PROFILE%
-            echo **終了コード:** %BUILD_EXIT_CODE%
-            echo.
-            echo ### エラー内容:
-            echo ```
-            echo ${{ steps.error-log.outputs.ERROR_LOG }}
-            echo ```
-          ) else (
-            echo ## ✅ Unity ビルド成功
-            echo.
-            echo **ビルドプロファイル:** %BUILD_PROFILE%
-            echo **終了コード:** %BUILD_EXIT_CODE%
-          )
-          echo.
-          echo 詳細は [Actions](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) を確認してください。
-          echo EOF
-        ) >> %GITHUB_OUTPUT%
-        exit /b 0
-
-    # Slack通知（成功時）
-    - name: Slack通知（成功）
-      if: steps.build.outputs.has_errors == 'false'
-      continue-on-error: true
-      shell: cmd
-      run: |
-        @echo off
-        set PROJECT_ROOT=${{ github.workspace }}
-        set BUILD_PROFILE=${{ matrix.build_profile }}
-
-        REM Slack Bot Tokenが設定されているか確認
-        if "%SLACK_BOT_TOKEN%"=="" (
-          echo Slack Bot Tokenが設定されていません。通知をスキップします。
-          exit /b 0
+        if "%HAS_ERRORS%"=="true" (
+          echo build_status=failed >> %GITHUB_OUTPUT%
+        ) else (
+          echo build_status=success >> %GITHUB_OUTPUT%
         )
+        echo build_profile=%BUILD_PROFILE% >> %GITHUB_OUTPUT%
 
-        REM 成功通知を送信
-        node "%PROJECT_ROOT%\script\slack-notify.js" success
-      env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        GITHUB_REPOSITORY: ${{ github.repository }}
-        GITHUB_RUN_ID: ${{ github.run_id }}
-        GITHUB_RUN_NUMBER: ${{ github.run_number }}
-        BUILD_PROFILE: ${{ matrix.build_profile }}
-
-    # Slack通知（失敗時）
-    - name: Slack通知（失敗）
-      if: steps.build.outputs.has_errors == 'true'
+    # Discord通知（成功・失敗問わず常に実行）
+    - name: Discord通知
+      if: always()
       continue-on-error: true
       shell: cmd
       run: |
         @echo off
         set PROJECT_ROOT=${{ github.workspace }}
         set BUILD_PROFILE=${{ matrix.build_profile }}
+        set HAS_ERRORS=${{ steps.check_artifact.outputs.has_errors }}
         set ERROR_FILE=%PROJECT_ROOT%\build-errors.txt
 
-        REM Slack Bot Tokenが設定されているか確認
-        if "%SLACK_BOT_TOKEN%"=="" (
-          echo Slack Bot Tokenが設定されていません。通知をスキップします。
+        REM Discord Webhook URLが設定されているか確認
+        if "%DISCORD_WEBHOOK_URL%"=="" (
+          echo Discord Webhook URLが設定されていません。通知をスキップします。
           exit /b 0
         )
 
-        REM 失敗通知を送信
-        node "%PROJECT_ROOT%\script\slack-notify.js" failure "%ERROR_FILE%"
+        REM ビルド結果に応じて通知を送信
+        if "%HAS_ERRORS%"=="true" (
+          node "%PROJECT_ROOT%\script\discord-notify.js" failure "%ERROR_FILE%"
+        ) else (
+          node "%PROJECT_ROOT%\script\discord-notify.js" success
+        )
       env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         GITHUB_REPOSITORY: ${{ github.repository }}
         GITHUB_RUN_ID: ${{ github.run_id }}
         GITHUB_RUN_NUMBER: ${{ github.run_number }}
         BUILD_PROFILE: ${{ matrix.build_profile }}
         BUILD_EXIT_CODE: ${{ steps.build.outputs.build_exit_code }}
 
-    # ビルドログのアップロード
+    # ビルドログのアップロード（テキストファイルとして）
     - name: ビルドログのアップロード
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: build-log-${{ matrix.build_profile }}-${{ github.run_number }}
-        path: |
-          ${{ github.workspace }}/build.log
-          ${{ github.workspace }}/build-errors.txt
+        path: ${{ github.workspace }}/build.log
         if-no-files-found: ignore
+        compression-level: 0
+
+    # エラーログのアップロード（テキストファイルとして）
+    - name: エラーログのアップロード
+      if: steps.check_artifact.outputs.has_errors == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-errors-${{ matrix.build_profile }}-${{ github.run_number }}
+        path: ${{ github.workspace }}/build-errors.txt
+        if-no-files-found: ignore
+        compression-level: 0
 
     # ビルド結果の確認（失敗時はワークフローを失敗させる）
     - name: ビルド結果の確認
-      if: steps.build.outputs.has_errors == 'true'
+      if: steps.check_artifact.outputs.has_errors == 'true'
       shell: cmd
       run: |
         @echo off
