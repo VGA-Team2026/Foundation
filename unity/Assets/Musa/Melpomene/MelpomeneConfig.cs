@@ -64,8 +64,8 @@ namespace Melpomene
         [Serializable]
         private class ProjectSettings
         {
-            public string repositoryOwner = "VGA-Team2026";
-            public string repositoryName = "Foundation";
+            public string repositoryOwner = "";
+            public string repositoryName = "";
             public string[] defaultLabels = new string[] { "melpomene", "auto-generated" };
             public string defaultPriority = "Medium";
             public string defaultCategory = "Bug";
