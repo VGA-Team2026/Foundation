@@ -9,8 +9,6 @@ using UnityEditor;
 public class InjectSelector : Editor
 {
     private List<InjectParamList> _paramLists;
-    private bool _needsRefresh = true;
-
     private void OnEnable()
     {
         RefreshParamLists();
@@ -105,7 +103,6 @@ public class InjectSelector : Editor
             }
         }
 
-        _needsRefresh = false;
     }
 
     /// <summary>

@@ -39,10 +39,11 @@ public class PreprocessBuild : IPreprocessBuildWithReport
         }
 
         //IL2CPP
-        if(PlayerSettings.GetScriptingBackend(EditorUserBuildSettings.selectedBuildTargetGroup).ToString() != "IL2CPP")
+        var buildTarget = UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+        if(PlayerSettings.GetScriptingBackend(buildTarget).ToString() != "IL2CPP")
         {
             //書き換える
-            PlayerSettings.SetScriptingBackend(EditorUserBuildSettings.selectedBuildTargetGroup, ScriptingImplementation.IL2CPP);
+            PlayerSettings.SetScriptingBackend(buildTarget, ScriptingImplementation.IL2CPP);
             Debug.LogWarning("ScriptingBackendをIL2CPPに変更しました");
         }
 
@@ -102,7 +103,7 @@ public class PreprocessBuild : IPreprocessBuildWithReport
 
         //ビルドハッシュの更新
         // Dynamicパスにソースコードを生成
-        BuildCommand.BuildStateBuild(BuildState.TeamID);
+        BuildScript.BuildStateBuild(BuildState.TeamID);
     }
 
     void AddressableCheck(string path)

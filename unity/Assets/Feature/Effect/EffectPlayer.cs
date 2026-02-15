@@ -8,10 +8,6 @@ using UnityEngine;
 public class EffectPlayer
 {
     [SerializeField]
-    [Tooltip("クォンタイズするフレーム（デフォルト0）")]
-    private int quantizeFrame = 0;
-
-    [SerializeField]
     [Tooltip("PrefabDictionaryのキー")]
     [PrefabDictionaryFilter(typeof(BasicEffect))]
     private string prefabKey;
