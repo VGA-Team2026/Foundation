@@ -48,16 +48,16 @@ gh issue create --title "<タイトル>" --body "<本文>"
 ### 3. ブランチの作成
 
 ```bash
-# 現在mainにいない場合はstash → main → pull
+# 現在developにいない場合はstash → develop → pull
 git stash  # 変更がある場合
-git checkout main
+git checkout develop
 git pull
 git checkout -b fix/<Issue番号>
 git stash pop  # stashした場合
 ```
 
 - ブランチ名: `fix/<Issue番号>`
-- mainブランチの最新から作成する
+- developブランチの最新から作成する
 
 ### 4. コミット
 

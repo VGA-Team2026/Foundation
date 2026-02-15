@@ -122,7 +122,8 @@ PR作成後、最終的な調査資料をPRにコメントとして投稿する:
 
 ```bash
 # 調査資料をPRにコメント投稿
-gh pr comment {PR番号} --body "$(cat spec/doc/issue-{Issue番号}-{簡潔な説明}.md)"
+gh pr comment {PR番号} --body "<!-- 調査資料 -->
+$(cat spec/doc/issue-{Issue番号}-{簡潔な説明}.md)"
 ```
 
 **重要:**
