@@ -222,7 +222,7 @@ public static class BuildScript
     {
         try
         {
-            var reportPath = Path.Combine(Application.dataPath, "..\\..\\", "compile-report.md");
+            var reportPath = Path.Combine(Application.dataPath, "..", "..", "compile-report.md");
             var report = GenerateMarkdownReport();
 
             File.WriteAllText(reportPath, report, Encoding.UTF8);
@@ -357,8 +357,15 @@ public static class BuildScript
 
             // Addressablesをビルド
             Debug.Log("=== BuildScript: Building Addressables ===");
-            AddressableAssetSettings.BuildPlayerContent();
-            Debug.Log("=== BuildScript: Addressables build completed ===");
+            var addressablesResult = AddressableAssetSettings.BuildPlayerContent();
+            if (!string.IsNullOrEmpty(addressablesResult.Error))
+            {
+                Debug.LogError($"=== BuildScript: Addressables build failed: {addressablesResult.Error} ===");
+                OutputBuildReport(null, profileType);
+                EditorApplication.Exit(1);
+                return;
+            }
+            Debug.Log($"=== BuildScript: Addressables build completed ({addressablesResult.OutputPath}) ===");
 
             // BuildStateを生成
             BuildScript.BuildStateBuild(BuildState.TeamID);
@@ -490,14 +497,10 @@ public class BuildState
         {
             Directory.CreateDirectory(targetPath);
 
-            using (var fs = new FileStream(Path.Combine(targetPath, "BuildState.cs"), FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
-            {
-                var sourceCode = source
-                    .Replace("<Hash>", Guid.NewGuid().ToString())
-                    .Replace("<TeamID>", teamID);
-                var bytes = Encoding.UTF8.GetBytes(sourceCode);
-                fs.Write(bytes, 0, bytes.Length);
-            }
+            var sourceCode = source
+                .Replace("<Hash>", Guid.NewGuid().ToString())
+                .Replace("<TeamID>", teamID);
+            File.WriteAllText(Path.Combine(targetPath, "BuildState.cs"), sourceCode, Encoding.UTF8);
 
             Debug.Log($"=== BuildScript: BuildState.cs generated ===");
         }
@@ -755,6 +758,7 @@ public class BuildState
         };
 
         BuildScript.BuildStateBuild(BuildState.TeamID);
+        AddressableAssetSettings.BuildPlayerContent();
         var report = BuildPipeline.BuildPlayer(options);
 
         if (report.summary.result == BuildResult.Succeeded)
@@ -791,6 +795,7 @@ public class BuildState
         };
 
         BuildScript.BuildStateBuild(BuildState.TeamID);
+        AddressableAssetSettings.BuildPlayerContent();
         var report = BuildPipeline.BuildPlayer(options);
 
         if (report.summary.result == BuildResult.Succeeded)
