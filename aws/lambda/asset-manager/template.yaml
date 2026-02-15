@@ -1,0 +1,179 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Unity Asset Manager - S3/DynamoDB連携
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+  S3BucketName:
+    Type: String
+    Default: unity-assets-bucket
+  PresignedUrlExpiration:
+    Type: Number
+    Default: 3600
+    Description: Presigned URL有効期限（秒）
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.11
+    MemorySize: 256
+
+Resources:
+  # DynamoDB テーブル
+  AssetRegistryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'AssetRegistry-${Environment}'
+      AttributeDefinitions:
+        - AttributeName: project_id
+          AttributeType: S
+        - AttributeName: asset_hash
+          AttributeType: S
+      KeySchema:
+        - AttributeName: project_id
+          KeyType: HASH
+        - AttributeName: asset_hash
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # S3 バケット
+  AssetStorageBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${S3BucketName}-${Environment}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+            AllowedOrigins:
+              - '*'
+            MaxAge: 3600
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Lambda 関数
+  AssetManagerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'AssetManager-${Environment}'
+      CodeUri: .
+      Handler: lambda_function.lambda_handler
+      Environment:
+        Variables:
+          ASSET_TABLE_NAME: !Ref AssetRegistryTable
+          S3_BUCKET: !Ref AssetStorageBucket
+          PRESIGNED_URL_EXPIRATION: !Ref PresignedUrlExpiration
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AssetRegistryTable
+        - S3CrudPolicy:
+            BucketName: !Ref AssetStorageBucket
+      Events:
+        GetAssets:
+          Type: Api
+          Properties:
+            Path: /assets
+            Method: GET
+            RestApiId: !Ref AssetManagerApi
+        PostAssets:
+          Type: Api
+          Properties:
+            Path: /assets
+            Method: POST
+            RestApiId: !Ref AssetManagerApi
+        DeleteAssets:
+          Type: Api
+          Properties:
+            Path: /assets
+            Method: DELETE
+            RestApiId: !Ref AssetManagerApi
+        Options:
+          Type: Api
+          Properties:
+            Path: /assets
+            Method: OPTIONS
+            RestApiId: !Ref AssetManagerApi
+
+  # API Gateway
+  AssetManagerApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub 'AssetManagerAPI-${Environment}'
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: "'GET,POST,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Api-Key,Authorization'"
+        AllowOrigin: "'*'"
+      Auth:
+        ApiKeyRequired: true
+
+  # API Key
+  AssetManagerApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    DependsOn: AssetManagerApiStage
+    Properties:
+      Name: !Sub 'AssetManagerKey-${Environment}'
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref AssetManagerApi
+          StageName: !Ref Environment
+
+  # Usage Plan
+  AssetManagerUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn: AssetManagerApiStage
+    Properties:
+      UsagePlanName: !Sub 'AssetManagerPlan-${Environment}'
+      ApiStages:
+        - ApiId: !Ref AssetManagerApi
+          Stage: !Ref Environment
+      Throttle:
+        BurstLimit: 100
+        RateLimit: 50
+
+  AssetManagerUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref AssetManagerApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref AssetManagerUsagePlan
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${AssetManagerApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+  ApiKeyId:
+    Description: API Key ID (use 'aws apigateway get-api-key --api-key <id> --include-value' to get the value)
+    Value: !Ref AssetManagerApiKey
+  TableName:
+    Description: DynamoDB Table Name
+    Value: !Ref AssetRegistryTable
+  BucketName:
+    Description: S3 Bucket Name
+    Value: !Ref AssetStorageBucket

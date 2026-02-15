@@ -27,6 +27,43 @@ namespace Melpomene
     }
 
     /// <summary>
+    /// GitHub Issueのコメントデータ
+    /// </summary>
+    [Serializable]
+    public class MelpomeneComment
+    {
+        /// <summary>コメントID（GitHub fullDatabaseId対応のためlong型）</summary>
+        public long id;
+
+        /// <summary>コメント本文</summary>
+        public string body;
+
+        /// <summary>投稿者のユーザー名</summary>
+        public string userName;
+
+        /// <summary>作成日時（ISO 8601形式）</summary>
+        public string createdAt;
+
+        /// <summary>更新日時（ISO 8601形式）</summary>
+        public string updatedAt;
+
+        /// <summary>
+        /// 整形された作成日時を取得
+        /// </summary>
+        public string FormattedCreatedAt
+        {
+            get
+            {
+                if (DateTime.TryParse(createdAt, out DateTime dt))
+                {
+                    return dt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+                }
+                return createdAt;
+            }
+        }
+    }
+
+    /// <summary>
     /// Melpomeneチケットデータ
     /// NOTE: GitHub Issueと対応するチケット情報を保持
     /// </summary>
@@ -75,11 +112,24 @@ namespace Melpomene
         /// <summary>Issueの状態（open/closed）</summary>
         public string state = "open";
 
+        /// <summary>マイルストーンID（ローカル管理、非推奨）</summary>
+        [Obsolete("GitHubマイルストーンを使用してください")]
+        public string milestoneId;
+
+        /// <summary>マイルストーン名（表示用、Issue本文に含める）</summary>
+        public string milestoneName;
+
+        /// <summary>GitHubマイルストーン番号（GitHub API用）</summary>
+        public int githubMilestoneNumber;
+
         /// <summary>
         /// GitHub Issue本文を生成する
         /// </summary>
         public string GenerateIssueBody()
         {
+            // NOTE: マイルストーン情報をメタデータに追加
+            string milestoneText = string.IsNullOrEmpty(milestoneName) ? "(なし)" : milestoneName;
+
             return $@"## 報告者
 {userName}
 
@@ -95,6 +145,7 @@ namespace Melpomene
 ## メタデータ
 - **優先度**: {priority}
 - **カテゴリ**: {category}
+- **マイルストーン**: {milestoneText}
 - **作成日時**: {timestamp}
 
 ---
@@ -210,6 +261,10 @@ namespace Melpomene
                             float.TryParse(coords[2].Trim(), out float z);
                             ticket.worldPosition = new Vector3(x, y, z);
                         }
+                    }
+                    else if (TryExtractValue(trimmedLine, "- **マイルストーン**:", out var milestone))
+                    {
+                        ticket.milestoneName = milestone == "(なし)" ? "" : milestone;
                     }
                     else if (currentSection == "説明" && !trimmedLine.StartsWith("##") && !trimmedLine.StartsWith("---"))
                     {

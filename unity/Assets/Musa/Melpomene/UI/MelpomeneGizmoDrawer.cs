@@ -38,11 +38,16 @@ namespace Melpomene
                 MelpomeneTicketDetailWindow.ShowWindow(ticket);
             });
 
-            if (ticket.state == "open")
+            // 自分が作成したチケットのみクローズ可能
+            if (ticket.state == "open" && IsOwnTicket(ticket))
             {
                 menu.AddItem(new GUIContent("Close Issue"), false, () =>
                 {
-                    if (EditorUtility.DisplayDialog("Close Issue", $"Close issue #{ticket.issueNumber}?", "Yes", "No"))
+                    if (EditorUtility.DisplayDialog(
+                        "チケットをクローズ",
+                        $"チケット #{ticket.issueNumber} をクローズしますか？\n\n「{ticket.title}」",
+                        "クローズする",
+                        "キャンセル"))
                     {
                         MelpomeneManager.Instance.CloseTicketAsync(ticket.issueNumber).Forget();
                     }
@@ -50,6 +55,19 @@ namespace Melpomene
             }
 
             menu.ShowAsContext();
+        }
+
+        /// <summary>
+        /// 自分が作成したチケットかどうかを判定
+        /// NOTE: ticket.userNameとconfig.defaultUserNameを比較
+        /// </summary>
+        private static bool IsOwnTicket(MelpomeneTicket ticket)
+        {
+            if (ticket == null) return false;
+            var config = MelpomeneManager.Instance.Config;
+            return config != null &&
+                   !string.IsNullOrEmpty(config.defaultUserName) &&
+                   ticket.userName == config.defaultUserName;
         }
     }
 }

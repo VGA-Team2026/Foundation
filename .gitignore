@@ -1,0 +1,3 @@
+# Musa local settings (contains secrets)
+musa/melpomene/serverconf.json
+musa/melpomene/settings.local.json

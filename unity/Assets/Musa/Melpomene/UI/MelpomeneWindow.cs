@@ -21,30 +21,50 @@ namespace Melpomene
 
         private List<MelpomeneTicket> filteredTickets = new List<MelpomeneTicket>();
 
-        public void InitializeForMusa()
-        {
-            if (!MelpomeneManager.Instance.IsInitialized)
-                MelpomeneManager.Instance.Initialize();
-            RefreshFilteredTickets();
-        }
-
-        public void DrawContent()
-        {
-            DrawToolbar();
-            EditorGUILayout.Space();
-            DrawFilters();
-            EditorGUILayout.Space();
-            DrawTicketList();
-            DrawFooter();
-        }
-
-        [MenuItem("Tools/Melpomene/Ticket List")]
         public static void ShowWindow()
         {
             var window = GetWindow<MelpomeneWindow>();
             window.titleContent = new GUIContent("Melpomene");
             window.minSize = new Vector2(500, 400);
             window.Show();
+        }
+
+        /// <summary>
+        /// MusaWindow埋め込み用の初期化
+        /// NOTE: EditorWindow.OnEnable相当の処理を外部から呼び出す
+        /// </summary>
+        public void InitializeForMusa()
+        {
+            if (!MelpomeneManager.Instance.IsInitialized)
+            {
+                MelpomeneManager.Instance.Initialize();
+            }
+            RefreshFilteredTickets();
+        }
+
+        /// <summary>
+        /// MusaWindow埋め込み用の描画
+        /// NOTE: OnGUI相当の処理を外部から呼び出す
+        /// </summary>
+        public void DrawContent()
+        {
+            DrawToolbar();
+            EditorGUILayout.Space();
+
+            if (!MelpomeneManager.Instance.IsConfigValid)
+            {
+                EditorGUILayout.HelpBox("GitHub configuration is not set. Please configure in Musa > Melpomene > 設定", MessageType.Warning);
+                if (GUILayout.Button("Open Settings"))
+                {
+                    MelpomeneConfig.OpenSettings();
+                }
+                EditorGUILayout.Space();
+            }
+
+            DrawFilters();
+            EditorGUILayout.Space();
+            DrawTicketList();
+            DrawFooter();
         }
 
         private void OnEnable()
@@ -66,7 +86,7 @@ namespace Melpomene
 
             if (!MelpomeneManager.Instance.IsConfigValid)
             {
-                EditorGUILayout.HelpBox("GitHub configuration is not set. Please configure in Tools/Melpomene/Settings", MessageType.Warning);
+                EditorGUILayout.HelpBox("GitHub configuration is not set. Please configure in Musa > Melpomene > 設定", MessageType.Warning);
 
                 if (GUILayout.Button("Open Settings"))
                 {
@@ -88,6 +108,22 @@ namespace Melpomene
         private void DrawToolbar()
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+
+            // ON/OFFトグル
+            var config = MelpomeneManager.Instance.Config;
+            if (config != null)
+            {
+                bool wasEnabled = config.enableTicketDisplay;
+                bool newEnabled = GUILayout.Toggle(wasEnabled, wasEnabled ? "ON" : "OFF", EditorStyles.toolbarButton, GUILayout.Width(40));
+                if (newEnabled != wasEnabled)
+                {
+                    config.enableTicketDisplay = newEnabled;
+                    config.SaveLocalSettings();
+                    SceneView.RepaintAll();
+                }
+            }
+
+            EditorGUILayout.Space(5);
 
             if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.Width(60)))
             {
@@ -232,6 +268,15 @@ namespace Melpomene
                 SceneView.lastActiveSceneView?.LookAt(ticket.worldPosition);
             }
 
+            // クローズボタン（openかつ自分が作成者の場合のみ）
+            if (ticket.state == "open" && IsOwnTicket(ticket))
+            {
+                if (GUILayout.Button("×", GUILayout.Width(25)))
+                {
+                    CloseTicket(ticket);
+                }
+            }
+
             EditorGUILayout.EndHorizontal();
 
             // タイトル
@@ -327,6 +372,52 @@ namespace Melpomene
                 isRefreshing = false;
                 Repaint();
             }
+        }
+
+        /// <summary>
+        /// 自分が作成したチケットかどうかを判定
+        /// NOTE: ticket.userNameとconfig.defaultUserNameを比較
+        /// </summary>
+        private bool IsOwnTicket(MelpomeneTicket ticket)
+        {
+            if (ticket == null) return false;
+            var config = MelpomeneManager.Instance.Config;
+            return config != null &&
+                   !string.IsNullOrEmpty(config.defaultUserName) &&
+                   ticket.userName == config.defaultUserName;
+        }
+
+        /// <summary>
+        /// チケットをクローズ
+        /// NOTE: 確認ダイアログを表示してからクローズ
+        /// </summary>
+        private async void CloseTicket(MelpomeneTicket ticket)
+        {
+            if (ticket == null) return;
+
+            // 確認ダイアログ
+            bool confirmed = EditorUtility.DisplayDialog(
+                "チケットをクローズ",
+                $"チケット #{ticket.issueNumber} をクローズしますか？\n\n「{ticket.title}」",
+                "クローズする",
+                "キャンセル"
+            );
+
+            if (!confirmed) return;
+
+            bool success = await MelpomeneManager.Instance.CloseTicketAsync(ticket.issueNumber);
+
+            if (success)
+            {
+                EditorUtility.DisplayDialog("Melpomene", $"チケット #{ticket.issueNumber} をクローズしました。", "OK");
+                RefreshFilteredTickets();
+            }
+            else
+            {
+                EditorUtility.DisplayDialog("Melpomene", "チケットのクローズに失敗しました。コンソールを確認してください。", "OK");
+            }
+
+            Repaint();
         }
 
         private Color GetCategoryColor(MelpomeneCategory category)

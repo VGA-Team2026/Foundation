@@ -47,6 +47,11 @@ namespace Melpomene
         public MelpomeneCache Cache => cache;
 
         /// <summary>
+        /// GitHubクライアント
+        /// </summary>
+        public MelpomeneGitHubClient GitHubClient => gitHubClient;
+
+        /// <summary>
         /// 初期化済みかどうか
         /// </summary>
         public bool IsInitialized => isInitialized;
@@ -93,8 +98,8 @@ namespace Melpomene
             isInitialized = true;
             Debug.Log("[Melpomene] Initialized");
 
-            // 初期キャッシュ取得
-            if (config.IsValid)
+            // 初期キャッシュ取得（autoRefreshCacheが有効な場合のみ）
+            if (config.IsValid && config.autoRefreshCache)
             {
                 RefreshCacheAsync().Forget();
             }
@@ -107,15 +112,23 @@ namespace Melpomene
         {
             if (!IsConfigValid)
             {
-                Debug.LogError("[Melpomene] Config is not valid. Please configure in Tools/Melpomene/Settings");
+                Debug.LogWarning("[Melpomene] Config is not valid. Please configure in Tools/Melpomene/Settings");
                 return null;
             }
 
             // タイムスタンプを設定
             ticket.timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
-            // GitHubにIssueを作成
-            var createdTicket = await gitHubClient.CreateIssueAsync(ticket);
+            // GitHubにIssueを作成（マイルストーン付き）
+            MelpomeneTicket createdTicket;
+            if (ticket.githubMilestoneNumber > 0)
+            {
+                createdTicket = await gitHubClient.CreateIssueWithMilestoneAsync(ticket, ticket.githubMilestoneNumber);
+            }
+            else
+            {
+                createdTicket = await gitHubClient.CreateIssueAsync(ticket);
+            }
 
             if (createdTicket != null)
             {
@@ -124,6 +137,43 @@ namespace Melpomene
             }
 
             return createdTicket;
+        }
+
+        /// <summary>
+        /// GitHubからマイルストーン一覧を取得する
+        /// </summary>
+        public async UniTask<List<GitHubMilestone>> GetGitHubMilestonesAsync()
+        {
+            if (!IsConfigValid)
+            {
+                Debug.LogWarning("[Melpomene] Config is not valid. Cannot fetch milestones.");
+                return new List<GitHubMilestone>();
+            }
+
+            return await gitHubClient.GetMilestonesAsync();
+        }
+
+        /// <summary>
+        /// GitHubにマイルストーンを作成する
+        /// </summary>
+        public async UniTask<GitHubMilestone> CreateGitHubMilestoneAsync(string title, string dueDate, string description = "")
+        {
+            if (!IsConfigValid)
+            {
+                Debug.LogWarning("[Melpomene] Config is not valid. Cannot create milestone.");
+                return null;
+            }
+
+            return await gitHubClient.CreateMilestoneAsync(title, dueDate, description);
+        }
+
+        /// <summary>
+        /// GitHubからローカルJSONを同期する（GitHub側を正とする）
+        /// </summary>
+        public async UniTask SyncMilestonesFromGitHubAsync()
+        {
+            var milestones = await GetGitHubMilestonesAsync();
+            MelpomeneMilestoneManager.SyncFromGitHub(milestones);
         }
 
         /// <summary>
@@ -184,43 +234,102 @@ namespace Melpomene
 
         /// <summary>
         /// SceneView上のGUIイベント処理
-        /// NOTE: Alt+クリックでチケット入力UIを表示
+        /// NOTE: F1キーでチケットリスト、F4キーで表示/非表示切り替え
+        /// NOTE: Alt+Ctrl+クリックでチケット入力UIを表示
         /// </summary>
         private void OnSceneGUI(SceneView sceneView)
         {
-            // Alt+Clickショートカットが無効の場合は処理しない
-            if (config == null || !config.enableAltClickShortcut)
+            if (config == null)
                 return;
 
             var e = Event.current;
 
+            // F1キーでチケットリストを表示
+            if (e.type == EventType.KeyDown && e.keyCode == KeyCode.F1)
+            {
+                MelpomeneWindow.ShowWindow();
+                e.Use();
+                return;
+            }
+
+            // F4キーで表示/非表示切り替え
+            if (e.type == EventType.KeyDown && e.keyCode == KeyCode.F4)
+            {
+                ToggleTicketDisplay();
+                e.Use();
+                return;
+            }
+
+            // Alt+Clickショートカットが無効の場合は以降の処理をスキップ
+            if (!config.enableAltClickShortcut)
+                return;
+
             // Alt + Ctrl + 左クリック
             if (e.type == EventType.MouseDown && e.button == 0 && e.alt && e.control)
             {
-                // クリック位置を取得
-                Vector2 screenPosition = e.mousePosition;
-
-                // Raycastで対象オブジェクトを特定
-                Ray ray = HandleUtility.GUIPointToWorldRay(screenPosition);
-                GameObject targetObject = null;
-                Vector3 worldPosition = Vector3.zero;
-
-                if (Physics.Raycast(ray, out RaycastHit hit))
-                {
-                    targetObject = hit.collider.gameObject;
-                    worldPosition = hit.point;
-                }
-                else
-                {
-                    // Raycastがヒットしない場合はシーンカメラからの距離で位置を計算
-                    worldPosition = ray.GetPoint(10f);
-                }
-
-                // チケット入力ウィンドウを表示
-                MelpomeneInputWindow.ShowWindow(screenPosition, worldPosition, targetObject);
-
+                // レイキャストでオブジェクトを選択
+                SelectObjectAtMousePosition();
+                OpenTicketInputAtMousePosition();
                 e.Use();
             }
+        }
+
+        /// <summary>
+        /// チケット表示の有効/無効を切り替え
+        /// </summary>
+        public void ToggleTicketDisplay()
+        {
+            if (config == null) return;
+
+            config.enableTicketDisplay = !config.enableTicketDisplay;
+            config.SaveLocalSettings();
+            SceneView.RepaintAll();
+
+            Debug.Log($"[Melpomene] Ticket display: {(config.enableTicketDisplay ? "ON" : "OFF")}");
+        }
+
+        /// <summary>
+        /// マウス位置のオブジェクトを選択
+        /// NOTE: Alt+Ctrl+クリック時にレイキャストで当たったオブジェクトを選択
+        /// </summary>
+        private void SelectObjectAtMousePosition()
+        {
+            Vector2 screenPosition = Event.current.mousePosition;
+            Ray ray = HandleUtility.GUIPointToWorldRay(screenPosition);
+
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                Selection.activeGameObject = hit.collider.gameObject;
+            }
+        }
+
+        /// <summary>
+        /// 現在のマウス位置でチケット入力ウィンドウを開く
+        /// NOTE: F1キーおよびAlt+Ctrl+クリックから呼び出される
+        /// </summary>
+        private void OpenTicketInputAtMousePosition()
+        {
+            // マウス位置を取得
+            Vector2 screenPosition = Event.current.mousePosition;
+
+            // Raycastで対象オブジェクトを特定
+            Ray ray = HandleUtility.GUIPointToWorldRay(screenPosition);
+            GameObject targetObject = null;
+            Vector3 worldPosition = Vector3.zero;
+
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                targetObject = hit.collider.gameObject;
+                worldPosition = hit.point;
+            }
+            else
+            {
+                // Raycastがヒットしない場合はシーンカメラからの距離で位置を計算
+                worldPosition = ray.GetPoint(10f);
+            }
+
+            // チケット入力ウィンドウを表示
+            MelpomeneInputWindow.ShowWindow(screenPosition, worldPosition, targetObject);
         }
 
         /// <summary>
@@ -259,6 +368,7 @@ namespace Melpomene
 
         /// <summary>
         /// 新規チケットを作成するためのデータを準備
+        /// NOTE: GitHubマイルストーンはウィンドウ側で非同期取得するため、ここでは設定しない
         /// </summary>
         public MelpomeneTicket PrepareNewTicket(Vector2 screenPosition, Vector3 worldPosition, GameObject targetObject)
         {
@@ -272,7 +382,9 @@ namespace Melpomene
                 worldPosition = worldPosition,
                 targetObjectPath = targetObject != null ? GetHierarchyPath(targetObject) : "",
                 priority = config.defaultPriority,
-                category = config.defaultCategory
+                category = config.defaultCategory,
+                githubMilestoneNumber = 0,
+                milestoneName = ""
             };
 
             return ticket;
