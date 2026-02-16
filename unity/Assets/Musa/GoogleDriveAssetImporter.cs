@@ -265,6 +265,10 @@ public class GoogleDriveAssetImporter : EditorWindow
             // NOTE: カタログを解析（ローカル情報を保持）
             var localAssets = _catalogCache?.localAssets;
             _catalogCache = JsonUtility.FromJson<AssetCatalog>(catalogJson);
+            if (_catalogCache.assets == null)
+            {
+                _catalogCache.assets = new AssetEntry[0];
+            }
             if (_catalogCache.localAssets == null)
             {
                 _catalogCache.localAssets = localAssets;

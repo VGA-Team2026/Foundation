@@ -386,7 +386,10 @@ public class GoogleDriveAssetUploader : EditorWindow
                     Debug.Log($"[AssetUploader] カタログ作成完了: fileId={catalogFileId}");
 
                     // NOTE: 公開設定
-                    await SetFilePublicAsync(catalogFileId);
+                    if (!await SetFilePublicAsync(catalogFileId))
+                    {
+                        Debug.LogWarning("[AssetUploader] カタログの公開設定に失敗しました");
+                    }
                 }
             }
 
