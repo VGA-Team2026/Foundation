@@ -239,7 +239,9 @@ namespace Melpomene
             if (e.type == EventType.MouseDown && e.button == 0 && e.alt && e.control && selectionRect.Contains(e.mousePosition))
             {
                 // InstanceIDからGameObjectを取得
+#pragma warning disable CS0618
                 var targetObject = EditorUtility.InstanceIDToObject(instanceID) as GameObject;
+#pragma warning restore CS0618
 
                 if (targetObject != null)
                 {
