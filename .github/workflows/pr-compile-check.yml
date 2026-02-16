@@ -53,6 +53,7 @@ jobs:
     - name: Unityプロジェクトのコンパイル
       id: compile
       shell: cmd
+      continue-on-error: true
       run: |
         @echo off
         set PROJECT_ROOT=${{ github.workspace }}
@@ -71,113 +72,77 @@ jobs:
         if %COMPILE_EXIT_CODE% neq 0 (
           echo has_errors=true >> %GITHUB_OUTPUT%
           echo ❌ コンパイル失敗 (終了コード: %COMPILE_EXIT_CODE%)
-          exit /b %COMPILE_EXIT_CODE%
+        ) else (
+          echo has_errors=false >> %GITHUB_OUTPUT%
+          echo ✅ コンパイル成功
         )
 
-        echo has_errors=false >> %GITHUB_OUTPUT%
-        echo ✅ コンパイル成功
-
-    # エラーログの抽出
-    - name: エラーログの抽出
-      if: failure()
-      id: error-log
+    # Node.jsでエラーログ解析
+    - name: エラーログ解析
+      id: parse-errors
       shell: cmd
+      continue-on-error: true
       run: |
         @echo off
-        setlocal enabledelayedexpansion
         set PROJECT_ROOT=${{ github.workspace }}
         set COMPILE_LOG=%PROJECT_ROOT%\compile.log
-        if exist "%COMPILE_LOG%" (
-          echo ERROR_LOG^<^<EOF >> %GITHUB_OUTPUT%
-          REM TestCompile固有のエラーメッセージと一般的なコンパイルエラーを抽出
-          findstr /n /c:"=== TestCompile: Compilation failed" /c:"CompilerError" /c:"Error" /c:"Exception" /c:"Assets\" "%COMPILE_LOG%" >> %GITHUB_OUTPUT% 2>nul || echo ログにエラーが見つかりませんでした >> %GITHUB_OUTPUT%
-          echo EOF >> %GITHUB_OUTPUT%
-        ) else (
-          echo ERROR_LOG=コンパイルログが見つかりません >> %GITHUB_OUTPUT%
-        )
-        exit /b 0
+        set ERROR_SUMMARY=%PROJECT_ROOT%\compile-errors.md
 
-    # エラーサマリーの作成
-    - name: エラーサマリーの作成
-      if: failure()
-      id: summary
-      shell: cmd
-      run: |
-        @echo off
-        setlocal enabledelayedexpansion
-        set PROJECT_ROOT=${{ github.workspace }}
-        set REPORT_FILE=%PROJECT_ROOT%\compile-report.md
+        echo === コンパイルログ解析 ===
 
-        (
-        echo SUMMARY^<^<EOF
-        echo ## ❌ スクリプトコンパイルエラーが検出されました
-        echo.
-        echo ### 詳細なレポート:
-        if exist "%REPORT_FILE%" (
-          type "%REPORT_FILE%" 2>nul
-        ) else (
-          echo コンパイルレポートが生成されませんでした。
-          echo.
-          echo ### エラー内容:
-          echo ```
-          echo ${{ steps.error-log.outputs.ERROR_LOG }}
-          echo ```
-        )
-        echo.
-        echo ### 対応方法:
-        echo 1. エラーログを確認してください
-        echo 2. コンパイルエラーを修正してください
-        echo 3. 修正後、再度プッシュしてください
-        echo.
-        echo ビルドログの詳細は[Actions]^(https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}^)を確認してください。
-        echo EOF
-        ) >> %GITHUB_OUTPUT%
-        exit /b 0
+        REM Node.jsスクリプトでログを解析
+        node "%PROJECT_ROOT%\.github\scripts\parse-compile-log.js" "%COMPILE_LOG%" "%ERROR_SUMMARY%"
 
-    # PRにコメント（エラー時のみ）
+    # エラーサマリをArtifactとしてアップロード
+    - name: エラーサマリのアップロード
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: compile-errors
+        path: |
+          compile-errors.md
+          compile.log
+        if-no-files-found: ignore
+        retention-days: 7
+
+    # PRにコメント（エラー時のみ - フラグファイルで判定）
     - name: PRにエラーコメント
-      if: failure()
+      if: always()
       shell: cmd
       run: |
         @echo off
         set PROJECT_ROOT=${{ github.workspace }}
-        set TEMP_FILE=%PROJECT_ROOT%\temp_error_summary.md
+        set ERROR_SUMMARY=%PROJECT_ROOT%\compile-errors.md
+        set HAS_ERRORS_FLAG=%PROJECT_ROOT%\.has_compile_errors
 
-        REM サマリーを一時ファイルに書き込み
-        echo ${{ steps.summary.outputs.SUMMARY }} > "%TEMP_FILE%"
-
-        REM GitHub CLIでPRにコメント
-        gh pr comment ${{ github.event.number }} --body-file "%TEMP_FILE%"
-
-        REM 一時ファイルをクリーンアップ
-        if exist "%TEMP_FILE%" del "%TEMP_FILE%"
+        REM エラーフラグファイルが存在する場合のみコメント
+        if exist "%HAS_ERRORS_FLAG%" (
+          echo エラーが検出されました。PRにコメントを追加します...
+          if exist "%ERROR_SUMMARY%" (
+            gh pr comment ${{ github.event.number }} --body-file "%ERROR_SUMMARY%"
+            echo ✅ PRにコメントを追加しました
+          ) else (
+            echo ⚠️ エラーサマリファイルが見つかりません
+          )
+        ) else (
+          echo ✅ コンパイルエラーなし。PRコメントはスキップします。
+        )
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # コンパイルレポートの表示
-    - name: コンパイルレポートの表示
+    # 最終結果の判定（エラーフラグファイルで判定）
+    - name: 結果判定
       if: always()
-      id: report
       shell: cmd
       run: |
         @echo off
-        setlocal enabledelayedexpansion
         set PROJECT_ROOT=${{ github.workspace }}
-        set REPORT_FILE=%PROJECT_ROOT%\compile-report.md
+        set HAS_ERRORS_FLAG=%PROJECT_ROOT%\.has_compile_errors
 
-        echo === コンパイルレポート表示 ===
-        if exist "%REPORT_FILE%" (
-          echo レポートファイル: %REPORT_FILE%
-          echo.
-          echo COMPILE_REPORT^<^<EOF >> %GITHUB_OUTPUT%
-          type "%REPORT_FILE%" >> %GITHUB_OUTPUT% 2>nul || echo レポートファイル読み込みエラー >> %GITHUB_OUTPUT%
-          echo EOF >> %GITHUB_OUTPUT%
-
-          echo === レポート内容 ===
-          type "%REPORT_FILE%"
-          echo === レポート終了 ===
+        if exist "%HAS_ERRORS_FLAG%" (
+          echo ❌ コンパイルエラーが検出されました
+          echo 詳細は Artifacts の compile-errors.md を確認してください
+          exit /b 1
         ) else (
-          echo レポートファイルが見つかりません: %REPORT_FILE%
-          echo COMPILE_REPORT=コンパイルレポートが生成されませんでした >> %GITHUB_OUTPUT%
+          echo ✅ コンパイル成功
         )
-        exit /b 0
