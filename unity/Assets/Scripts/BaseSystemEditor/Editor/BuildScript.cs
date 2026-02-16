@@ -357,15 +357,15 @@ public static class BuildScript
 
             // Addressablesをビルド
             Debug.Log("=== BuildScript: Building Addressables ===");
-            var addressablesResult = AddressableAssetSettings.BuildPlayerContent();
-            if (!string.IsNullOrEmpty(addressablesResult.Error))
+            AddressableAssetSettings.BuildPlayerContent(out AddressablesPlayerBuildResult addressablesResult);
+            if (addressablesResult != null && !string.IsNullOrEmpty(addressablesResult.Error))
             {
                 Debug.LogError($"=== BuildScript: Addressables build failed: {addressablesResult.Error} ===");
                 OutputBuildReport(null, profileType);
                 EditorApplication.Exit(1);
                 return;
             }
-            Debug.Log($"=== BuildScript: Addressables build completed ({addressablesResult.OutputPath}) ===");
+            Debug.Log("=== BuildScript: Addressables build completed ===");
 
             // BuildStateを生成
             BuildScript.BuildStateBuild(BuildState.TeamID);
