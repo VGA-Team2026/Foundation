@@ -179,7 +179,7 @@ public class TextCheckerWindow : EditorWindow
                 {
                     EditorGUILayout.LabelField(chk.Name);
                     EditorGUILayout.Space(2);
-                    EditorGUILayout.ObjectField(chk.ObjRef, typeof(GameObject));
+                    EditorGUILayout.ObjectField(chk.ObjRef, typeof(GameObject), true);
                     EditorGUILayout.Space(2);
                     if (chk.LzTxt)
                     {

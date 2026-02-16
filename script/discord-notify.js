@@ -72,6 +72,7 @@ function sendDiscordWebhook(webhookUrl, payload) {
             reject(new Error('Discord webhook request timed out'));
         });
 
+
         req.on('error', (error) => {
             reject(error);
         });

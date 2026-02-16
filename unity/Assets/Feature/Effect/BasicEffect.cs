@@ -15,7 +15,7 @@ public class BasicEffect : MonoBehaviour, IHitStopTarget, IObjectPool
 
     [SerializeField]
     [Tooltip("エフェクトのParticleSystem参照")]
-    private ParticleSystem particleSystem;
+    private new ParticleSystem particleSystem;
 
     private string _prefabKey;
     private bool _isOneShot = true;
