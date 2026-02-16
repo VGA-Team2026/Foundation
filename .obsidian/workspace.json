@@ -1,0 +1,260 @@
+{
+  "main": {
+    "id": "59a9556528bd9a35",
+    "type": "split",
+    "children": [
+      {
+        "id": "2242367df98f9b4d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "3892ac9aca07b81c",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "spec/code/Cue/CueTimelineDirector.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "CueTimelineDirector"
+            }
+          },
+          {
+            "id": "1b8cedd1cd1bc505",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "spec/code/Cue/CueSequence.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "CueSequence"
+            }
+          },
+          {
+            "id": "1cec276883a0248c",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "新規タブ"
+            }
+          }
+        ],
+        "currentTab": 2
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "49934c181d5a5b5e",
+    "type": "split",
+    "children": [
+      {
+        "id": "d3b0469e6be4ef8b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "bc213ef98a6ec3b7",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "ファイルエクスプローラ"
+            }
+          },
+          {
+            "id": "86c05e3842ca358a",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "検索"
+            }
+          },
+          {
+            "id": "9e43a3bc117958c8",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "ブックマーク"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "22c13f26c8012e5a",
+    "type": "split",
+    "children": [
+      {
+        "id": "e4c4cc970984f54a",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c932ad1260361c47",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "spec/code/Tools/FPSRenderer.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "FPSRendererへのバックリンク"
+            }
+          },
+          {
+            "id": "377ed030fc3c3507",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "spec/code/Tools/FPSRenderer.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "FPSRendererからのアウトゴーイングリンク"
+            }
+          },
+          {
+            "id": "2a010d03010b3314",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "タグ"
+            }
+          },
+          {
+            "id": "e9e71ade99eee3bb",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "すべてのプロパティ"
+            }
+          },
+          {
+            "id": "5e21692e1f321723",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "spec/code/Tools/FPSRenderer.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "FPSRendererのアウトライン"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:クイックスイッチャーを開く": false,
+      "graph:グラフビューを開く": false,
+      "canvas:新規キャンバスを作成": false,
+      "daily-notes:今日のデイリーノートを開く": false,
+      "templates:テンプレートを挿入": false,
+      "command-palette:コマンドパレットを開く": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "1cec276883a0248c",
+  "lastOpenFiles": [
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Views/Merge/Developer/DirectoryConflicts/MovedEvilTwinMenu.cs",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Views/Merge/Developer/DirectoryConflicts/MovedEvilTwinMenu.cs.meta",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Views/Merge/Developer/DirectoryConflicts/MoveDeleteMenu.cs",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Views/Merge/Developer/DirectoryConflicts/MoveAddMenu.cs.meta",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Views/Merge/Developer/DirectoryConflicts/MoveDeleteMenu.cs.meta",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Views/Merge/Developer/DirectoryConflicts/MoveAddMenu.cs",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Views/Merge/Developer/DirectoryConflicts/MergeViewDirectoryConflictMenu.cs.meta",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Views/Merge/Developer/DirectoryConflicts/MergeViewDirectoryConflictMenu.cs",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Views/Merge/Developer/DirectoryConflicts/EvilTwinMenu.cs.meta",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Views/Merge/Developer/DirectoryConflicts/LoadedTwiceMenu.cs",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Views/Merge/Developer/DirectoryConflicts/LoadedTwiceMenu.cs.meta",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Assets/Images/xlink.png",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Assets/Images/stepok@2x.png",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Assets/Images/step3@2x.png",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Assets/Images/stepok.png",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Assets/Images/step3.png",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Assets/Images/step2@2x.png",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Assets/Images/step2.png",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Assets/Images/step1@2x.png",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Assets/Images/step1.png",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/Assets/Images/secondarytabclosehover.png",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Editor/_Deprecated/README.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Documentation~/TableOfContents.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Documentation~/ReconnectCB.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Documentation~/QuickStartGuide.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Documentation~/MainFeatures.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Documentation~/index.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Documentation~/MoreHelp.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Documentation~/GitUsers.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Documentation~/Glossary.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Documentation~/GetStartedNewRepository.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Documentation~/GetStartedExistingRepository.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Documentation~/GetStarted.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Documentation~/CreateProjects.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Documentation~/AccessRemoteProjects.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Documentation~/AddMembers.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/Third Party Notices.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/README.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/LICENSE.md",
+    "unity/Library/PackageCache/com.unity.collab-proxy@ab839cc7d2ad/CHANGELOG.md",
+    "unity/Library/PackageCache/com.unity.ide.visualstudio@198cdf337d13/Documentation~/TableOfContents.md",
+    "unity/Library/PackageCache/com.unity.ide.visualstudio@198cdf337d13/Documentation~/using-visual-studio-editor.md",
+    "unity/Library/PackageCache/com.unity.ide.visualstudio@198cdf337d13/Documentation~/README.md",
+    "unity/Library/PackageCache/com.unity.ide.visualstudio@198cdf337d13/Documentation~/index.md",
+    "unity/Library/PackageCache/com.unity.ide.visualstudio@198cdf337d13/ThirdPartyNotices.md",
+    "unity/Library/PackageCache/com.unity.ide.visualstudio@198cdf337d13/LICENSE.md"
+  ]
+}
