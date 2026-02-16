@@ -758,7 +758,12 @@ public class BuildState
         };
 
         BuildScript.BuildStateBuild(BuildState.TeamID);
-        AddressableAssetSettings.BuildPlayerContent();
+        AddressableAssetSettings.BuildPlayerContent(out var devAddressablesResult);
+        if (!string.IsNullOrEmpty(devAddressablesResult.Error))
+        {
+            Debug.LogError($"Build failed: Addressables build failed: {devAddressablesResult.Error}");
+            return;
+        }
         var report = BuildPipeline.BuildPlayer(options);
 
         if (report.summary.result == BuildResult.Succeeded)
@@ -795,7 +800,12 @@ public class BuildState
         };
 
         BuildScript.BuildStateBuild(BuildState.TeamID);
-        AddressableAssetSettings.BuildPlayerContent();
+        AddressableAssetSettings.BuildPlayerContent(out var releaseAddressablesResult);
+        if (!string.IsNullOrEmpty(releaseAddressablesResult.Error))
+        {
+            Debug.LogError($"Build failed: Addressables build failed: {releaseAddressablesResult.Error}");
+            return;
+        }
         var report = BuildPipeline.BuildPlayer(options);
 
         if (report.summary.result == BuildResult.Succeeded)
