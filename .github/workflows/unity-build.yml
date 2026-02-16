@@ -220,12 +220,12 @@ jobs:
         echo Output dir: %BUILD_OUTPUT%
 
         if not exist "%BUILD_OUTPUT%\*.exe" (
-          echo has_errors=true>> %GITHUB_OUTPUT%
+          echo has_errors=true >> %GITHUB_OUTPUT%
           echo Build failed: No exe found
           exit /b 0
         )
 
-        echo has_errors=false>> %GITHUB_OUTPUT%
+        echo has_errors=false >> %GITHUB_OUTPUT%
         echo Build success: exe found
         dir "%BUILD_OUTPUT%\*.exe"
 
