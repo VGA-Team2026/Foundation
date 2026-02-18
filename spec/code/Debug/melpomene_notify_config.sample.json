@@ -1,0 +1,26 @@
+{
+  "webhook_url": "YOUR_WEBHOOK_URL_HERE",
+  "platform": "slack",
+  "notify_time": "09:00",
+  "timezone": "Asia/Tokyo",
+  "users": [
+    {
+      "github_username": "github_user1",
+      "display_name": "ユーザー1",
+      "mention_id": "<@U01234567>",
+      "email": "user1@example.com"
+    },
+    {
+      "github_username": "github_user2",
+      "display_name": "ユーザー2",
+      "mention_id": "<@U98765432>",
+      "email": "user2@example.com"
+    }
+  ],
+  "default_mention": "<!here>",
+  "message_template": {
+    "header": ":ticket: 本日のチケットお知らせ",
+    "no_tickets": "未完了のチケットはありません :tada:",
+    "user_section": "{mention} さんの未完了チケット ({count}件)"
+  }
+}

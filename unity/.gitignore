@@ -75,3 +75,7 @@ crashlytics-build.properties
 Assets/ThirdParty/CRI/CRIMW/
 Assets/CRIMW/
 Assets/CRIMW.meta
+
+# Melpomene Config (contains secrets)
+Assets/Musa/Melpomene/MelpomeneConfig.asset
+Assets/Foundation/Scripts/BaseSystemEditor/Editor/Melpomene/MelpomeneConfig.asset

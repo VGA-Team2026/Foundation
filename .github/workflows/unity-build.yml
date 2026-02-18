@@ -1,0 +1,400 @@
+# Unity ビルドワークフロー
+#
+# スケジュール:
+#   - JST 7:00: Development + Release ビルド
+#   - JST 17:00: Development ビルド
+#   - JST 23:00: Development ビルド
+#
+# 必要なGitHub Secrets:
+#   - UNITY_EDITOR_PATH: Unityエディタのパス（必須）
+#   - BUILD_OUTPUT_PATH: ビルド成果物の出力先パス（必須）
+#   - DISCORD_WEBHOOK_URL: Discord Webhook URL（オプション）
+
+name: Unity Build
+
+on:
+  schedule:
+    # JST 7:00 (UTC 22:00 前日) - Development + Release
+    - cron: '0 22 * * *'
+    # JST 17:00 (UTC 8:00) - Development のみ
+    - cron: '0 8 * * *'
+    # JST 23:00 (UTC 14:00) - Development のみ
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+    # 手動実行用のオプション
+    inputs:
+      build_profile:
+        description: 'ビルドプロファイル'
+        required: false
+        default: 'Development'
+        type: choice
+        options:
+          - Development
+          - Release
+      clean_build:
+        description: 'クリーンビルド（Library削除）'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  # ビルドプロファイルを決定するジョブ
+  setup:
+    runs-on: [self-hosted, unity, Windows]
+    outputs:
+      matrix: ${{ steps.set_matrix.outputs.matrix }}
+    steps:
+      - name: ビルドプロファイルの決定
+        id: set_matrix
+        shell: powershell
+        run: |
+          # 手動実行の場合は指定されたプロファイルを使用
+          $manualProfile = "${{ github.event.inputs.build_profile }}"
+          if ($manualProfile -ne "") {
+            $profiles = @($manualProfile)
+            Write-Host "手動実行: $manualProfile"
+          } else {
+            # スケジュール実行の場合は現在のJST時刻で判定
+            $jstTime = [System.TimeZoneInfo]::ConvertTimeFromUtc((Get-Date).ToUniversalTime(), [System.TimeZoneInfo]::FindSystemTimeZoneById("Tokyo Standard Time"))
+            $hour = $jstTime.Hour
+            Write-Host "JST時刻: $($jstTime.ToString('yyyy-MM-dd HH:mm:ss'))"
+
+            if ($hour -ge 6 -and $hour -lt 8) {
+              # JST 7:00頃 -> Development + Release
+              $profiles = @("Development", "Release")
+              Write-Host "朝のビルド: Development + Release"
+            } else {
+              # JST 17:00, 23:00頃 -> Development のみ
+              $profiles = @("Development")
+              Write-Host "定期ビルド: Development のみ"
+            }
+          }
+
+          # マトリックス用のJSON出力
+          $matrix = @{ build_profile = $profiles } | ConvertTo-Json -Compress
+          Write-Host "Matrix: $matrix"
+          echo "matrix=$matrix" >> $env:GITHUB_OUTPUT
+
+  # Unityビルドジョブ
+  unity-build:
+    needs: setup
+    runs-on: [self-hosted, unity, Windows]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+
+    steps:
+    # リポジトリをチェックアウト
+    - name: リポジトリのチェックアウト
+      uses: actions/checkout@v4
+      with:
+        clean: false
+
+    # スクリプトアセンブリキャッシュのクリア
+    # NOTE: asmdef構成変更時にEditorとPlayerのレイアウト不整合を防止
+    - name: スクリプトアセンブリキャッシュのクリア
+      shell: cmd
+      run: |
+        @echo off
+        set PROJECT_ROOT=${{ github.workspace }}
+        set SCRIPT_ASSEMBLIES=%PROJECT_ROOT%\unity\Library\ScriptAssemblies
+
+        if exist "%SCRIPT_ASSEMBLIES%" (
+          echo ScriptAssembliesキャッシュを削除中...
+          rmdir /s /q "%SCRIPT_ASSEMBLIES%"
+          echo 削除完了
+        )
+
+    # Unity環境の検証
+    - name: Unity環境の検証
+      id: validate_unity
+      shell: cmd
+      run: |
+        @echo off
+        REM GitHub SecretsからUnityパスを取得
+        set UNITY_PATH=${{ secrets.UNITY_EDITOR_PATH }}
+
+        REM Unityパスが設定されているか確認
+        if "%UNITY_PATH%"=="" (
+          echo ❌ UNITY_EDITOR_PATH シークレットが設定されていません
+          echo GitHub リポジトリの Settings ^> Secrets and variables ^> Actions で設定してください
+          exit /b 1
+        )
+
+        REM Unityが指定パスに存在するか確認
+        if not exist "%UNITY_PATH%" (
+          echo ❌ Unityが見つかりません: %UNITY_PATH%
+          echo UNITY_EDITOR_PATH シークレットを正しいパスに更新してください
+          exit /b 1
+        )
+
+        echo ✅ Unity検証成功: %UNITY_PATH%
+        echo UNITY_PATH=%UNITY_PATH% >> %GITHUB_OUTPUT%
+
+    # 出力先パスの検証
+    - name: 出力先パスの検証
+      id: validate_output
+      shell: cmd
+      run: |
+        @echo off
+        REM GitHub Secretsから出力先パスを取得
+        set OUTPUT_PATH=${{ secrets.BUILD_OUTPUT_PATH }}
+
+        REM 出力先パスが設定されているか確認
+        if "%OUTPUT_PATH%"=="" (
+          echo ❌ BUILD_OUTPUT_PATH シークレットが設定されていません
+          echo GitHub リポジトリの Settings ^> Secrets and variables ^> Actions で設定してください
+          exit /b 1
+        )
+
+        REM 出力先ディレクトリが存在するか確認（なければ作成）
+        if not exist "%OUTPUT_PATH%" (
+          echo 出力先ディレクトリを作成: %OUTPUT_PATH%
+          mkdir "%OUTPUT_PATH%"
+        )
+
+        echo ✅ 出力先パス検証成功: %OUTPUT_PATH%
+        echo OUTPUT_PATH=%OUTPUT_PATH% >> %GITHUB_OUTPUT%
+
+    # クリーンビルド（Libraryフォルダ削除）
+    - name: クリーンビルド（Library削除）
+      if: github.event.inputs.clean_build == 'true'
+      shell: cmd
+      run: |
+        @echo off
+        set PROJECT_ROOT=${{ github.workspace }}
+        set LIBRARY_PATH=%PROJECT_ROOT%\unity\Library
+
+        if exist "%LIBRARY_PATH%" (
+          echo クリーンビルド: Libraryフォルダを削除中...
+          rmdir /s /q "%LIBRARY_PATH%"
+          echo ✅ Libraryフォルダを削除しました
+        ) else (
+          echo Libraryフォルダは存在しません
+        )
+
+    # ビルド出力ディレクトリの準備
+    - name: ビルド出力ディレクトリの準備
+      shell: cmd
+      run: |
+        @echo off
+        set PROJECT_ROOT=${{ github.workspace }}
+        set BUILD_OUTPUT=%PROJECT_ROOT%\Build
+        set BUILD_PROFILE=${{ matrix.build_profile }}
+
+        REM ビルド出力ディレクトリを作成
+        if not exist "%BUILD_OUTPUT%" mkdir "%BUILD_OUTPUT%"
+        if not exist "%BUILD_OUTPUT%\%BUILD_PROFILE%" mkdir "%BUILD_OUTPUT%\%BUILD_PROFILE%"
+
+        echo ビルド出力ディレクトリ準備完了: %BUILD_OUTPUT%\%BUILD_PROFILE%
+
+    # Unityプロジェクトのビルド
+    - name: Unityプロジェクトのビルド
+      id: build
+      shell: cmd
+      run: |
+        @echo off
+        set PROJECT_ROOT=${{ github.workspace }}
+        set UNITY_PATH=${{ steps.validate_unity.outputs.UNITY_PATH }}
+        set BUILD_LOG=%PROJECT_ROOT%\build.log
+        set BUILD_PROFILE=${{ matrix.build_profile }}
+        set BUILD_OUTPUT=%PROJECT_ROOT%\Build\%BUILD_PROFILE%
+        cd unity
+
+        echo Unity build start
+        echo Profile: %BUILD_PROFILE%
+        echo Output: %BUILD_OUTPUT%
+
+        "%UNITY_PATH%" -batchmode -quit -projectPath . -executeMethod BuildScript.PerformBuild -buildProfile %BUILD_PROFILE% -buildPath "%BUILD_OUTPUT%" -logFile "%BUILD_LOG%"
+        echo build_exit_code=%ERRORLEVEL% >> %GITHUB_OUTPUT%
+
+    # ビルド成果物の確認
+    - name: Check Build Artifact
+      id: check_artifact
+      shell: cmd
+      run: |
+        @echo off
+        set BUILD_OUTPUT=${{ github.workspace }}\Build\${{ matrix.build_profile }}
+
+        echo Checking build artifacts...
+        echo Output dir: %BUILD_OUTPUT%
+
+        if not exist "%BUILD_OUTPUT%\*.exe" (
+          echo has_errors=true>> %GITHUB_OUTPUT%
+          echo Build failed: No exe found
+          exit /b 0
+        )
+
+        echo has_errors=false>> %GITHUB_OUTPUT%
+        echo Build success: exe found
+        dir "%BUILD_OUTPUT%\*.exe"
+
+    # エラーログの抽出
+    - name: エラーログの抽出
+      if: steps.check_artifact.outputs.has_errors == 'true'
+      id: error_log
+      shell: cmd
+      run: |
+        @echo off
+        setlocal enabledelayedexpansion
+        set PROJECT_ROOT=${{ github.workspace }}
+        set BUILD_LOG=%PROJECT_ROOT%\build.log
+        set ERROR_EXTRACT=%PROJECT_ROOT%\build-errors.txt
+
+        if exist "%BUILD_LOG%" (
+          echo ビルドログからエラーを抽出中...
+
+          REM エラー行を抽出
+          (
+            echo === Unity ビルドエラーログ ===
+            echo ビルドプロファイル: ${{ matrix.build_profile }}
+            echo 終了コード: ${{ steps.build.outputs.build_exit_code }}
+            echo.
+            echo === エラー詳細 ===
+          ) > "%ERROR_EXTRACT%"
+
+          findstr /n /c:"Error" /c:"Exception" /c:"Failed" /c:"error CS" "%BUILD_LOG%" >> "%ERROR_EXTRACT%" 2>nul
+
+          REM エラー内容を出力に設定
+          echo ERROR_LOG<<EOF >> %GITHUB_OUTPUT%
+          type "%ERROR_EXTRACT%" >> %GITHUB_OUTPUT%
+          echo EOF >> %GITHUB_OUTPUT%
+        ) else (
+          echo ERROR_LOG=ビルドログが見つかりません >> %GITHUB_OUTPUT%
+        )
+        exit /b 0
+
+    # ビルド成果物をZIP化
+    - name: ビルド成果物をZIP化
+      if: steps.check_artifact.outputs.has_errors == 'false'
+      id: zip_build
+      shell: powershell
+      run: |
+        $projectRoot = "${{ github.workspace }}"
+        $buildProfile = "${{ matrix.build_profile }}"
+        $buildDir = "$projectRoot\Build\$buildProfile"
+        $dateStr = Get-Date -Format "yyyyMMdd"
+        $zipName = "${buildProfile}_${dateStr}.zip"
+        $zipPath = "$projectRoot\$zipName"
+
+        Write-Host "ビルド成果物をZIP化中..."
+        Write-Host "ソース: $buildDir"
+        Write-Host "出力: $zipPath"
+
+        if (Test-Path $buildDir) {
+          # 既存のZIPファイルがあれば削除
+          if (Test-Path $zipPath) {
+            Remove-Item $zipPath -Force
+          }
+          Compress-Archive -Path "$buildDir\*" -DestinationPath $zipPath -Force
+          Write-Host "✅ ZIP作成完了: $zipPath"
+          echo "zip_path=$zipPath" >> $env:GITHUB_OUTPUT
+          echo "zip_name=$zipName" >> $env:GITHUB_OUTPUT
+        } else {
+          Write-Host "❌ ビルドディレクトリが見つかりません: $buildDir"
+          exit 1
+        }
+
+    # ZIPファイルを指定パスに移動
+    - name: ビルド成果物を出力先に移動
+      if: steps.check_artifact.outputs.has_errors == 'false'
+      shell: cmd
+      run: |
+        @echo off
+        set ZIP_PATH=${{ steps.zip_build.outputs.zip_path }}
+        set ZIP_NAME=${{ steps.zip_build.outputs.zip_name }}
+        set OUTPUT_PATH=${{ steps.validate_output.outputs.OUTPUT_PATH }}
+
+        if not exist "%OUTPUT_PATH%" mkdir "%OUTPUT_PATH%"
+
+        echo ZIP copy to output...
+        echo Source: %ZIP_PATH%
+        echo Dest: %OUTPUT_PATH%\%ZIP_NAME%
+
+        copy /Y "%ZIP_PATH%" "%OUTPUT_PATH%\%ZIP_NAME%"
+
+        if %ERRORLEVEL% equ 0 (
+          echo Copy success: %OUTPUT_PATH%\%ZIP_NAME%
+        ) else (
+          echo Copy failed
+          exit /b 1
+        )
+
+    # ビルドサマリーの作成
+    - name: Build Summary
+      if: always()
+      id: summary
+      shell: cmd
+      run: |
+        @echo off
+        set HAS_ERRORS=${{ steps.check_artifact.outputs.has_errors }}
+        set BUILD_PROFILE=${{ matrix.build_profile }}
+        set BUILD_EXIT_CODE=${{ steps.build.outputs.build_exit_code }}
+
+        if "%HAS_ERRORS%"=="true" (
+          echo build_status=failed >> %GITHUB_OUTPUT%
+        ) else (
+          echo build_status=success >> %GITHUB_OUTPUT%
+        )
+        echo build_profile=%BUILD_PROFILE% >> %GITHUB_OUTPUT%
+
+    # Discord通知（成功・失敗問わず常に実行）
+    - name: Discord通知
+      if: always()
+      continue-on-error: true
+      shell: cmd
+      run: |
+        @echo off
+        set PROJECT_ROOT=${{ github.workspace }}
+        set BUILD_PROFILE=${{ matrix.build_profile }}
+        set HAS_ERRORS=${{ steps.check_artifact.outputs.has_errors }}
+        set ERROR_FILE=%PROJECT_ROOT%\build-errors.txt
+
+        REM Discord Webhook URLが設定されているか確認
+        if "%DISCORD_WEBHOOK_URL%"=="" (
+          echo Discord Webhook URLが設定されていません。通知をスキップします。
+          exit /b 0
+        )
+
+        REM ビルド結果に応じて通知を送信
+        if "%HAS_ERRORS%"=="true" (
+          node "%PROJECT_ROOT%\script\discord-notify.js" failure "%ERROR_FILE%"
+        ) else (
+          node "%PROJECT_ROOT%\script\discord-notify.js" success
+        )
+      env:
+        DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        BUILD_PROFILE: ${{ matrix.build_profile }}
+        BUILD_EXIT_CODE: ${{ steps.build.outputs.build_exit_code }}
+
+    # ビルドログのアップロード（テキストファイルとして）
+    - name: ビルドログのアップロード
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-log-${{ matrix.build_profile }}-${{ github.run_number }}
+        path: ${{ github.workspace }}/build.log
+        if-no-files-found: ignore
+        compression-level: 0
+
+    # エラーログのアップロード（テキストファイルとして）
+    - name: エラーログのアップロード
+      if: steps.check_artifact.outputs.has_errors == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-errors-${{ matrix.build_profile }}-${{ github.run_number }}
+        path: ${{ github.workspace }}/build-errors.txt
+        if-no-files-found: ignore
+        compression-level: 0
+
+    # ビルド結果の確認（失敗時はワークフローを失敗させる）
+    - name: ビルド結果の確認
+      if: steps.check_artifact.outputs.has_errors == 'true'
+      shell: cmd
+      run: |
+        @echo off
+        echo ビルドが失敗しました。詳細はログを確認してください。
+        exit /b 1

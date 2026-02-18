@@ -6,6 +6,16 @@
     using UnityEngine.EventSystems;
         
     public class MenuItems {
+        private static T FindAnyObjectByTypeCompat<T>() where T : Object {
+#if UNITY_2023_1_OR_NEWER
+            return GameObject.FindAnyObjectByType<T>();
+#else
+#pragma warning disable CS0618
+            return GameObject.FindObjectOfType<T>();
+#pragma warning restore CS0618
+#endif
+        }
+
         // thanks to flatuicolors.com
         static Color[] colors = { 
             new Color(26 / 255f, 188 / 255f, 156 / 255f),
@@ -73,7 +83,7 @@
             canvas.name = "Canvas";
             canvas.gameObject.layer = LayerMask.NameToLayer("UI");
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            if (GameObject.FindObjectOfType<EventSystem>() == null) {
+            if (FindAnyObjectByTypeCompat<EventSystem>() == null) {
                 GameObject es = new GameObject();
                 es.name = "Event System";
                 es.AddComponent<EventSystem>();
@@ -146,7 +156,7 @@
                 Undo.RegisterCreatedObjectUndo(go, "Create Shapes2D Button");
             } else {
                 bool createdCanvas = false;
-                Canvas canvas = GameObject.FindObjectOfType<Canvas>();
+                Canvas canvas = FindAnyObjectByTypeCompat<Canvas>();
                 if (canvas == null || !canvas.enabled || canvas.transform.parent != null) {
                     canvas = CreateCanvas();
                     createdCanvas = true;
@@ -170,7 +180,7 @@
                 Undo.RegisterCreatedObjectUndo(go, "Create Shapes2D Panel");
             } else {
                 bool createdCanvas = false;
-                Canvas canvas = GameObject.FindObjectOfType<Canvas>();
+                Canvas canvas = FindAnyObjectByTypeCompat<Canvas>();
                 if (canvas == null || !canvas.enabled || canvas.transform.parent != null) {
                     canvas = CreateCanvas();
                     createdCanvas = true;
