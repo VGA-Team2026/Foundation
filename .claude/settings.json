@@ -5,12 +5,9 @@
       "Bash(find:*)",
       "Bash(cat:*)",
       "Bash(echo:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git reset:*)",
-      "Bash(git config:*)",
+      "Bash(git:*)",
       "Bash(touch:*)",
-      "Bash(git checkout:*)",
+      "Bash(gh:*)",
       "Bash(grep:*)"
     ],
     "deny": []
