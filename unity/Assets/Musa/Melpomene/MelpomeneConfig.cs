@@ -86,6 +86,7 @@ namespace Melpomene
             public string eurekaKeyBinding = "Pause";
             public bool autoRefreshCache = true;
             public bool enableNotificationPolling = true;
+            public bool skipSetupWizard = false;
         }
 
         private ServerConf _server = new ServerConf();
@@ -246,6 +247,12 @@ namespace Melpomene
         {
             get => _local.enableNotificationPolling;
             set => _local.enableNotificationPolling = value;
+        }
+
+        public bool skipSetupWizard
+        {
+            get => _local.skipSetupWizard;
+            set => _local.skipSetupWizard = value;
         }
 
         #endregion

@@ -16,11 +16,11 @@ public class MusaWindow : EditorWindow
 {
     // NOTE: メインタブ
     private int mainTab;
-    private readonly string[] mainTabNames = { "Terpsichore", "Melpomene", "Settings" };
+    private readonly string[] mainTabNames = { "Terpsichore", "Melpomene", "Global Settings" };
 
     // NOTE: サブタブ
     private int terpsichoreSubTab;
-    private readonly string[] terpsichoreSubTabNames = { "Server", "Bridge", "Watcher", "Config" };
+    private readonly string[] terpsichoreSubTabNames = { "Server", "Bridge", "Watcher", "設定", "環境チェック" };
     private int melpomeneSubTab;
     private readonly string[] melpomeneSubTabNames = { "チケット", "通知", "マイルストーン", "Eureka", "設定" };
 
@@ -77,6 +77,17 @@ public class MusaWindow : EditorWindow
     private MelpomeneNotificationWindow melpomeneNotificationWindow;
     private MelpomeneMilestoneWindow melpomeneMilestoneWindow;
     private MelpomeneSettingsWindow melpomeneSettingsWindow;
+
+    // =====================================================================
+    // Settings: 環境チェック用
+    // =====================================================================
+    private bool envGhAvailable;
+    private string envGhVersion;
+    private bool envGitAvailable;
+    private string envGitVersion;
+    private bool envNodeAvailable;
+    private string envNodeVersion;
+    private bool envChecked;
 
     // =====================================================================
     // 共通
@@ -285,7 +296,7 @@ public class MusaWindow : EditorWindow
                 }
             }
         }
-        // NOTE: Settingsタブはサブタブなし
+        // NOTE: 設定タブはサブタブなし
 
         GUILayout.FlexibleSpace();
     }
@@ -300,6 +311,7 @@ public class MusaWindow : EditorWindow
                 case 1: DrawBridgeTab(); break;
                 case 2: DrawWatcherTab(); break;
                 case 3: DrawConfigTab(); break;
+                case 4: DrawEnvironmentCheckTab(); break;
             }
         }
         else if (mainTab == 1)
@@ -868,6 +880,91 @@ public class MusaWindow : EditorWindow
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
         MusaGlobalSettings.DrawGUI();
         EditorGUILayout.EndVertical();
+    }
+
+    private void DrawEnvironmentCheckTab()
+    {
+        // NOTE: 初回表示時に自動チェック
+        if (!envChecked)
+        {
+            RunEnvironmentCheck();
+            envChecked = true;
+        }
+
+        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+        EditorGUILayout.LabelField("環境チェック", headerStyle);
+        EditorGUILayout.Space(4);
+
+        // GitHub CLI
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Space(10);
+        if (envGhAvailable)
+            EditorGUILayout.LabelField($"GitHub CLI (gh): \u2713 {envGhVersion}");
+        else
+            EditorGUILayout.LabelField("GitHub CLI (gh): \u2717 見つかりません",
+                new GUIStyle(EditorStyles.label) { normal = { textColor = new Color(0.8f, 0.5f, 0f) } });
+        EditorGUILayout.EndHorizontal();
+
+        // Git
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Space(10);
+        if (envGitAvailable)
+            EditorGUILayout.LabelField($"Git: \u2713 {envGitVersion}");
+        else
+            EditorGUILayout.LabelField("Git: \u2717 見つかりません",
+                new GUIStyle(EditorStyles.label) { normal = { textColor = new Color(0.8f, 0.5f, 0f) } });
+        EditorGUILayout.EndHorizontal();
+
+        // Node.js
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Space(10);
+        if (envNodeAvailable)
+            EditorGUILayout.LabelField($"Node.js: \u2713 {envNodeVersion}");
+        else
+            EditorGUILayout.LabelField("Node.js: \u2717 見つかりません",
+                new GUIStyle(EditorStyles.label) { normal = { textColor = new Color(0.8f, 0.5f, 0f) } });
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.Space(8);
+
+        if (GUILayout.Button("チェック実行", GUILayout.Height(28), GUILayout.Width(120)))
+        {
+            RunEnvironmentCheck();
+        }
+
+        EditorGUILayout.EndVertical();
+    }
+
+    private void RunEnvironmentCheck()
+    {
+        (envGhAvailable, envGhVersion) = CheckCommandAvailability("gh", "--version");
+        (envGitAvailable, envGitVersion) = CheckCommandAvailability("git", "--version");
+        (envNodeAvailable, envNodeVersion) = CheckCommandAvailability("node", "--version");
+    }
+
+    private static (bool available, string version) CheckCommandAvailability(string command, string args)
+    {
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo(command, args)
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using (var process = System.Diagnostics.Process.Start(psi))
+            {
+                var output = process.StandardOutput.ReadToEnd().Trim();
+                process.WaitForExit();
+                var firstLine = output.Split('\n')[0].Trim();
+                return (process.ExitCode == 0, firstLine);
+            }
+        }
+        catch
+        {
+            return (false, null);
+        }
     }
 
     #endregion
