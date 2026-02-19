@@ -40,6 +40,16 @@ public class MusaDocumentWindow : EditorWindow
 
     private Vector2 scrollPosition;
 
+    private static string NormalizeDocPath(string docPath)
+    {
+        var specRoot = MusaDocumentBrowser.GetSpecRootPath();
+        var relativePath = docPath.Replace('\\', '/');
+        var specRootNorm = specRoot.Replace('\\', '/');
+        if (relativePath.StartsWith(specRootNorm))
+            relativePath = "spec" + relativePath.Substring(specRootNorm.Length);
+        return relativePath;
+    }
+
     [MenuItem("Musa/ドキュメント")]
     public static void ShowWindow()
     {
@@ -115,7 +125,7 @@ public class MusaDocumentWindow : EditorWindow
                 DocPath = docPath,
                 DocContent = MusaDocumentBrowser.ReadDocContent(docPath),
             };
-            tab.Renderer.Parse(tab.DocContent);
+            tab.Renderer.Parse(tab.DocContent ?? string.Empty);
             docTabs.Add(tab);
         }
 
@@ -154,12 +164,12 @@ public class MusaDocumentWindow : EditorWindow
         if (!string.IsNullOrEmpty(currentDocPath))
         {
             currentDocContent = MusaDocumentBrowser.ReadDocContent(currentDocPath);
-            singleRenderer.Parse(currentDocContent);
+            singleRenderer.Parse(currentDocContent ?? string.Empty);
         }
         else
         {
             currentDocContent = null;
-            singleRenderer.Parse(null);
+            singleRenderer.Parse(string.Empty);
         }
         scrollPosition = Vector2.zero;
         Repaint();
@@ -240,12 +250,7 @@ public class MusaDocumentWindow : EditorWindow
         // NOTE: パス表示
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
         EditorGUILayout.LabelField(tab.ScriptName, EditorStyles.boldLabel);
-        var specRoot = MusaDocumentBrowser.GetSpecRootPath();
-        var relativePath = tab.DocPath.Replace('\\', '/');
-        var specRootNorm = specRoot.Replace('\\', '/');
-        if (relativePath.StartsWith(specRootNorm))
-            relativePath = "spec" + relativePath.Substring(specRootNorm.Length);
-        EditorGUILayout.LabelField("Path: " + relativePath, EditorStyles.miniLabel);
+        EditorGUILayout.LabelField("Path: " + NormalizeDocPath(tab.DocPath), EditorStyles.miniLabel);
         EditorGUILayout.EndVertical();
 
         EditorGUILayout.Space(2);
@@ -270,12 +275,7 @@ public class MusaDocumentWindow : EditorWindow
 
         if (!string.IsNullOrEmpty(currentDocPath))
         {
-            var specRoot = MusaDocumentBrowser.GetSpecRootPath();
-            var relativePath = currentDocPath.Replace('\\', '/');
-            var specRootNorm = specRoot.Replace('\\', '/');
-            if (relativePath.StartsWith(specRootNorm))
-                relativePath = "spec" + relativePath.Substring(specRootNorm.Length);
-            EditorGUILayout.LabelField("Path: " + relativePath, EditorStyles.miniLabel);
+            EditorGUILayout.LabelField("Path: " + NormalizeDocPath(currentDocPath), EditorStyles.miniLabel);
         }
         else if (!string.IsNullOrEmpty(currentScriptName))
         {
