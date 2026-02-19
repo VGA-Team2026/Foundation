@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
@@ -44,6 +45,10 @@ public class ThaleiaRenderer
     private static readonly Color H1Color = new Color(0.20f, 0.40f, 0.65f, 0.85f);
     private static readonly Color H2Color = new Color(0.25f, 0.50f, 0.45f, 0.70f);
     private static readonly Color H3Color = new Color(0.40f, 0.35f, 0.55f, 0.55f);
+
+    // NOTE: インラインマークダウン変換用Regexキャッシュ
+    private static readonly Regex BoldRegex = new Regex(@"\*\*(.+?)\*\*", RegexOptions.Compiled);
+    private static readonly Regex CodeRegex = new Regex(@"`(.+?)`", RegexOptions.Compiled);
 
     // =====================================================================
     // パース
@@ -285,10 +290,10 @@ public class ThaleiaRenderer
         if (string.IsNullOrEmpty(text)) return "";
 
         // NOTE: **bold** → <b>bold</b>
-        text = System.Text.RegularExpressions.Regex.Replace(text, @"\*\*(.+?)\*\*", "<b>$1</b>");
+        text = BoldRegex.Replace(text, "<b>$1</b>");
 
         // NOTE: `code` → <color=#88ccff>code</color>
-        text = System.Text.RegularExpressions.Regex.Replace(text, @"`(.+?)`", "<color=#88ccff>$1</color>");
+        text = CodeRegex.Replace(text, "<color=#88ccff>$1</color>");
 
         return text;
     }

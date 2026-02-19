@@ -104,6 +104,7 @@ public class MusaWindow : EditorWindow
     private GUIStyle errorItemStyle;
     private GUIStyle sidebarButtonStyle;
     private GUIStyle sidebarActiveButtonStyle;
+    private GUIStyle envWarningStyle;
     private bool stylesInitialized;
 
     [MenuItem("Musa/Musa %#m")]
@@ -238,6 +239,11 @@ public class MusaWindow : EditorWindow
             fontStyle = FontStyle.Bold
         };
         sidebarActiveButtonStyle.normal.textColor = new Color(0.3f, 0.8f, 1f);
+
+        envWarningStyle = new GUIStyle(EditorStyles.label)
+        {
+            normal = { textColor = new Color(0.8f, 0.5f, 0f) }
+        };
 
         stylesInitialized = true;
     }
@@ -901,8 +907,7 @@ public class MusaWindow : EditorWindow
         if (envGhAvailable)
             EditorGUILayout.LabelField($"GitHub CLI (gh): \u2713 {envGhVersion}");
         else
-            EditorGUILayout.LabelField("GitHub CLI (gh): \u2717 見つかりません",
-                new GUIStyle(EditorStyles.label) { normal = { textColor = new Color(0.8f, 0.5f, 0f) } });
+            EditorGUILayout.LabelField("GitHub CLI (gh): \u2717 見つかりません", envWarningStyle);
         EditorGUILayout.EndHorizontal();
 
         // Git
@@ -911,8 +916,7 @@ public class MusaWindow : EditorWindow
         if (envGitAvailable)
             EditorGUILayout.LabelField($"Git: \u2713 {envGitVersion}");
         else
-            EditorGUILayout.LabelField("Git: \u2717 見つかりません",
-                new GUIStyle(EditorStyles.label) { normal = { textColor = new Color(0.8f, 0.5f, 0f) } });
+            EditorGUILayout.LabelField("Git: \u2717 見つかりません", envWarningStyle);
         EditorGUILayout.EndHorizontal();
 
         // Node.js
@@ -921,8 +925,7 @@ public class MusaWindow : EditorWindow
         if (envNodeAvailable)
             EditorGUILayout.LabelField($"Node.js: \u2713 {envNodeVersion}");
         else
-            EditorGUILayout.LabelField("Node.js: \u2717 見つかりません",
-                new GUIStyle(EditorStyles.label) { normal = { textColor = new Color(0.8f, 0.5f, 0f) } });
+            EditorGUILayout.LabelField("Node.js: \u2717 見つかりません", envWarningStyle);
         EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.Space(8);
@@ -937,34 +940,9 @@ public class MusaWindow : EditorWindow
 
     private void RunEnvironmentCheck()
     {
-        (envGhAvailable, envGhVersion) = CheckCommandAvailability("gh", "--version");
-        (envGitAvailable, envGitVersion) = CheckCommandAvailability("git", "--version");
-        (envNodeAvailable, envNodeVersion) = CheckCommandAvailability("node", "--version");
-    }
-
-    private static (bool available, string version) CheckCommandAvailability(string command, string args)
-    {
-        try
-        {
-            var psi = new System.Diagnostics.ProcessStartInfo(command, args)
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            using (var process = System.Diagnostics.Process.Start(psi))
-            {
-                var output = process.StandardOutput.ReadToEnd().Trim();
-                process.WaitForExit();
-                var firstLine = output.Split('\n')[0].Trim();
-                return (process.ExitCode == 0, firstLine);
-            }
-        }
-        catch
-        {
-            return (false, null);
-        }
+        (envGhAvailable, envGhVersion) = MusaProcessUtility.CheckCommand("gh", "--version");
+        (envGitAvailable, envGitVersion) = MusaProcessUtility.CheckCommand("git", "--version");
+        (envNodeAvailable, envNodeVersion) = MusaProcessUtility.CheckCommand("node", "--version");
     }
 
     #endregion

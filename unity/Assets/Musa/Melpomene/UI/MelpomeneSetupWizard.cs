@@ -1,6 +1,5 @@
 #if UNITY_EDITOR
 using System;
-using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -23,6 +22,15 @@ namespace Melpomene
         // PAT検証
         private bool isValidating;
         private string validationError;
+
+        // GUIStyleキャッシュ
+        private GUIStyle cachedTitleStyle;
+        private GUIStyle cachedDescStyle;
+        private GUIStyle cachedErrorStyle;
+        private GUIStyle cachedValidatingStyle;
+        private GUIStyle cachedSectionStyle;
+        private GUIStyle cachedWarnStyle;
+        private bool stylesInitialized;
 
         // ページ3: 確認
         private string fetchedUserName;
@@ -98,8 +106,44 @@ namespace Melpomene
 
         #endregion
 
+        private void InitStyles()
+        {
+            if (stylesInitialized) return;
+
+            cachedTitleStyle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 16,
+                alignment = TextAnchor.MiddleCenter
+            };
+            cachedDescStyle = new GUIStyle(EditorStyles.wordWrappedLabel)
+            {
+                alignment = TextAnchor.MiddleCenter
+            };
+            cachedErrorStyle = new GUIStyle(EditorStyles.wordWrappedLabel)
+            {
+                normal = { textColor = Color.red },
+                alignment = TextAnchor.MiddleCenter
+            };
+            cachedValidatingStyle = new GUIStyle(EditorStyles.wordWrappedLabel)
+            {
+                alignment = TextAnchor.MiddleCenter
+            };
+            cachedSectionStyle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 12
+            };
+            cachedWarnStyle = new GUIStyle(EditorStyles.label)
+            {
+                normal = { textColor = new Color(0.8f, 0.5f, 0f) }
+            };
+
+            stylesInitialized = true;
+        }
+
         private void OnGUI()
         {
+            InitStyles();
+
             switch (currentPage)
             {
                 case 0:
@@ -131,21 +175,12 @@ namespace Melpomene
             EditorGUILayout.Space(16);
 
             // タイトル
-            var titleStyle = new GUIStyle(EditorStyles.boldLabel)
-            {
-                fontSize = 16,
-                alignment = TextAnchor.MiddleCenter
-            };
-            GUILayout.Label("Melpomene セットアップ", titleStyle);
+            GUILayout.Label("Melpomene セットアップ", cachedTitleStyle);
 
             EditorGUILayout.Space(16);
 
             // 説明文
-            var descStyle = new GUIStyle(EditorStyles.wordWrappedLabel)
-            {
-                alignment = TextAnchor.MiddleCenter
-            };
-            GUILayout.Label("デバッグツールのGitHub連携設定をします。\n設定をしない場合はチェックを入れてください。", descStyle);
+            GUILayout.Label("デバッグツールのGitHub連携設定をします。\n設定をしない場合はチェックを入れてください。", cachedDescStyle);
 
             EditorGUILayout.Space(24);
 
@@ -191,12 +226,7 @@ namespace Melpomene
         {
             EditorGUILayout.Space(16);
 
-            var titleStyle = new GUIStyle(EditorStyles.boldLabel)
-            {
-                fontSize = 16,
-                alignment = TextAnchor.MiddleCenter
-            };
-            GUILayout.Label("Personal Access Token 設定", titleStyle);
+            GUILayout.Label("Personal Access Token 設定", cachedTitleStyle);
 
             EditorGUILayout.Space(16);
 
@@ -224,23 +254,14 @@ namespace Melpomene
             if (!string.IsNullOrEmpty(validationError))
             {
                 EditorGUILayout.Space(8);
-                var errorStyle = new GUIStyle(EditorStyles.wordWrappedLabel)
-                {
-                    normal = { textColor = Color.red },
-                    alignment = TextAnchor.MiddleCenter
-                };
-                GUILayout.Label(validationError, errorStyle);
+                GUILayout.Label(validationError, cachedErrorStyle);
             }
 
             // 検証中表示
             if (isValidating)
             {
                 EditorGUILayout.Space(8);
-                var validatingStyle = new GUIStyle(EditorStyles.wordWrappedLabel)
-                {
-                    alignment = TextAnchor.MiddleCenter
-                };
-                GUILayout.Label("検証中...", validatingStyle);
+                GUILayout.Label("検証中...", cachedValidatingStyle);
             }
 
             EditorGUILayout.Space(24);
@@ -327,12 +348,7 @@ namespace Melpomene
         {
             EditorGUILayout.Space(16);
 
-            var titleStyle = new GUIStyle(EditorStyles.boldLabel)
-            {
-                fontSize = 16,
-                alignment = TextAnchor.MiddleCenter
-            };
-            GUILayout.Label("設定確認", titleStyle);
+            GUILayout.Label("設定確認", cachedTitleStyle);
 
             EditorGUILayout.Space(16);
 
@@ -347,13 +363,9 @@ namespace Melpomene
             EditorGUILayout.Space(16);
 
             // 環境チェックセクション
-            var sectionStyle = new GUIStyle(EditorStyles.boldLabel)
-            {
-                fontSize = 12
-            };
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(40);
-            GUILayout.Label("環境チェック", sectionStyle);
+            GUILayout.Label("環境チェック", cachedSectionStyle);
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space(4);
@@ -367,11 +379,7 @@ namespace Melpomene
             }
             else
             {
-                var warnStyle = new GUIStyle(EditorStyles.label)
-                {
-                    normal = { textColor = new Color(0.8f, 0.5f, 0f) }
-                };
-                EditorGUILayout.LabelField("GitHub CLI: \u2717 (見つかりません)", warnStyle);
+                EditorGUILayout.LabelField("GitHub CLI: \u2717 (見つかりません)", cachedWarnStyle);
             }
             GUILayout.Space(40);
             EditorGUILayout.EndHorizontal();
@@ -385,11 +393,7 @@ namespace Melpomene
             }
             else
             {
-                var warnStyle = new GUIStyle(EditorStyles.label)
-                {
-                    normal = { textColor = new Color(0.8f, 0.5f, 0f) }
-                };
-                EditorGUILayout.LabelField("Git: \u2717 (見つかりません)", warnStyle);
+                EditorGUILayout.LabelField("Git: \u2717 (見つかりません)", cachedWarnStyle);
             }
             GUILayout.Space(40);
             EditorGUILayout.EndHorizontal();
@@ -403,11 +407,7 @@ namespace Melpomene
             }
             else
             {
-                var warnStyle = new GUIStyle(EditorStyles.label)
-                {
-                    normal = { textColor = new Color(0.8f, 0.5f, 0f) }
-                };
-                EditorGUILayout.LabelField("Node.js: \u2717 (見つかりません)", warnStyle);
+                EditorGUILayout.LabelField("Node.js: \u2717 (見つかりません)", cachedWarnStyle);
             }
             GUILayout.Space(40);
             EditorGUILayout.EndHorizontal();
@@ -446,35 +446,9 @@ namespace Melpomene
         /// </summary>
         private void CheckCliAvailability()
         {
-            (ghAvailable, ghVersion) = CheckCommand("gh", "--version");
-            (gitAvailable, gitVersion) = CheckCommand("git", "--version");
-            (nodeAvailable, nodeVersion) = CheckCommand("node", "--version");
-        }
-
-        private static (bool available, string version) CheckCommand(string command, string args)
-        {
-            try
-            {
-                var psi = new ProcessStartInfo(command, args)
-                {
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-                using (var process = Process.Start(psi))
-                {
-                    var output = process.StandardOutput.ReadToEnd().Trim();
-                    process.WaitForExit();
-                    // NOTE: 最初の行だけ取得（gh --versionは複数行出力する場合がある）
-                    var firstLine = output.Split('\n')[0].Trim();
-                    return (process.ExitCode == 0, firstLine);
-                }
-            }
-            catch
-            {
-                return (false, null);
-            }
+            (ghAvailable, ghVersion) = MusaProcessUtility.CheckCommand("gh", "--version");
+            (gitAvailable, gitVersion) = MusaProcessUtility.CheckCommand("git", "--version");
+            (nodeAvailable, nodeVersion) = MusaProcessUtility.CheckCommand("node", "--version");
         }
     }
 }
