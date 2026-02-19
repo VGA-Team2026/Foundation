@@ -237,6 +237,8 @@ public class MusaDocumentWindow : EditorWindow
 
     private void DrawTabMode()
     {
+        if (docTabs.Count == 0) return;
+
         // NOTE: コンポーネント別タブ
         if (tabNames.Length > 0)
         {

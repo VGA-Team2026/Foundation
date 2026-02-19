@@ -22,9 +22,14 @@ public static class MusaProcessUtility
             };
             using (var process = Process.Start(psi))
             {
+                if (process == null) return (false, null);
+                // NOTE: WaitForExitを先に呼ぶ（ReadToEndはプロセス終了までブロックするため）
+                if (!process.WaitForExit(5000))
+                {
+                    try { process.Kill(); } catch { /* ignore */ }
+                    return (false, null);
+                }
                 var output = process.StandardOutput.ReadToEnd().Trim();
-                process.StandardError.ReadToEnd();
-                process.WaitForExit(5000);
                 // NOTE: 最初の行だけ取得（gh --versionは複数行出力する場合がある）
                 var firstLine = output.Split('\n')[0].Trim();
                 return (process.ExitCode == 0, firstLine);
