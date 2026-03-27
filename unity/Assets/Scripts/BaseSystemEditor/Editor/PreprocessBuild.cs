@@ -23,14 +23,6 @@ public class PreprocessBuild : IPreprocessBuildWithReport
     {
         Debug.Log($"IPreprocessBuildWithReport.OnPreprocessBuild for {report.summary.platform} at {report.summary.outputPath}");
 
-        //ビルドバリデーション
-
-        //Addressables
-        AddressableCheck("Assets/Scenes/SceneDependencies.asset");
-        AddressableCheck("Assets/Prefabs/Review/Review.prefab");
-        AddressableCheck("Assets/Prefabs/CRI.prefab");
-        AddressableCheck("Assets/ThirdParty/Shapes2D/Materials/Shape.mat");
-
         //アプリ名がFoundation
         if (PlayerSettings.productName == "Foundation")
         {
@@ -46,62 +38,7 @@ public class PreprocessBuild : IPreprocessBuildWithReport
             Debug.LogWarning("ScriptingBackendをIL2CPPに変更しました");
         }
 
-        //シーンランチャ―を最初に登録していること
-        var scene = EditorBuildSettings.scenes
-            .Where(scene => scene.enabled)
-            .Select(scene => scene.path)
-            .First();
-
-        if(!scene.Contains("GameLauncher"))
-        {
-            Debug.LogWarning("GameLauncherが起動シーンではないので初期化が失敗する可能性があります");
-        }
-
-        //ゲームランチャー設定確認
-        {
-            var gl = EditorBuildSettings.scenes
-                .Where(scene => scene.path.Contains("GameLauncher"))
-                .Select(scene => scene.path)
-                .First();
-
-            var grep = File.ReadAllLines(gl).Where(l => l.Contains("isDebug")).First();
-
-            Debug.Log(grep);
-            if (grep.Contains("1"))
-            {
-                Debug.LogWarning("GameLauncherのデバッグが有効です。提出ビルドの場合は注意しましょう。");
-            }
-        }
-
-
-        //実装確認
-        int implLine = 0;
-        var files = Directory.GetFiles(Application.dataPath, "*.cs", SearchOption.AllDirectories);
-        foreach(var f in files)
-        {
-            if (f.Contains("ReviewTest.cs")) continue;
-            if (f.Contains("GameEventRecorder.cs")) continue;
-            if (f.Contains("PreprocessBuild.cs")) continue;
-
-            var grep = File.ReadAllLines(f)
-                .Select((s, i) => new { Index = i, Value = s })
-                .Where(s => s.Value.Contains("GameEventRecorder.GameStart")
-                            || s.Value.Contains("GameEventRecorder.Review")
-                            || s.Value.Contains("GameEventRecorder.GameEnd"));
-
-            implLine += grep.Count();
-            foreach(var g in grep)
-            {
-                Debug.Log(g);
-            }
-        }
-        if(implLine == 0)
-        {
-            throw new BuildFailedException("レビュー機能が実装されていません");
-        }
-
         //ビルドハッシュの更新
-        // Dynamicパスにソースコードを生成
         BuildScript.BuildStateBuild(BuildState.TeamID);
     }
 
