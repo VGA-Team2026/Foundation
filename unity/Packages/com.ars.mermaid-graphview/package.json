@@ -1,0 +1,16 @@
+{
+    "name": "com.ars.mermaid-graphview",
+    "version": "0.1.0",
+    "displayName": "Mermaid GraphView",
+    "description": "Unity Editor extension to visualize Mermaid diagrams using GraphView.",
+    "unity": "2021.3",
+    "keywords": [
+        "mermaid",
+        "graphview",
+        "diagram",
+        "editor"
+    ],
+    "author": {
+        "name": "ARS"
+    }
+}
