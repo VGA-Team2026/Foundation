@@ -1,0 +1,246 @@
+/* ===========================
+   Mermaid GraphView - Main Stylesheet
+   =========================== */
+
+/* Grid background */
+GridBackground {
+    --grid-background-color: #1e1e1e;
+    --line-color: rgba(255, 255, 255, 0.05);
+    --thick-line-color: rgba(255, 255, 255, 0.08);
+    --spacing: 20;
+}
+
+/* Diagram type label */
+.mermaid-diagram-type {
+    font-size: 13px;
+    -unity-font-style: bold;
+    color: #5b9bd5;
+    background-color: #2a2a2a;
+    padding: 6px 10px;
+    margin: 4px;
+    border-radius: 3px;
+    border-bottom-width: 1px;
+    border-bottom-color: #3a3a3a;
+}
+
+/* Status labels */
+.mermaid-status {
+    font-size: 11px;
+    color: #8fbc8f;
+    background-color: #2a2a2a;
+    padding: 4px 10px;
+    margin: 4px;
+    border-radius: 2px;
+    border-top-width: 1px;
+    border-top-color: #3a3a3a;
+}
+
+.mermaid-status-error {
+    font-size: 11px;
+    color: #e06c75;
+    background-color: #3a2020;
+    padding: 4px 10px;
+    margin: 4px;
+    border-radius: 2px;
+    border-top-width: 1px;
+    border-top-color: #5a2020;
+}
+
+/* Node shape styles */
+.mermaid-node-rectangle #node-border {
+    border-radius: 0;
+    background-color: #334466;
+    border-width: 2px;
+    border-color: #5577aa;
+}
+
+.mermaid-node-rounded #node-border {
+    border-radius: 8px;
+    background-color: #335966;
+    border-width: 2px;
+    border-color: #558899;
+}
+
+.mermaid-node-stadium #node-border {
+    border-radius: 20px;
+    background-color: #336666;
+    border-width: 2px;
+    border-color: #559999;
+}
+
+.mermaid-node-diamond #node-border {
+    border-radius: 2px;
+    background-color: #664d33;
+    border-width: 2px;
+    border-color: #997744;
+}
+
+.mermaid-node-circle #node-border {
+    border-radius: 50px;
+    background-color: #405980;
+    border-width: 2px;
+    border-color: #6688bb;
+}
+
+.mermaid-node-hexagon #node-border {
+    border-radius: 4px;
+    background-color: #4d664d;
+    border-width: 2px;
+    border-color: #77aa77;
+}
+
+.mermaid-node-parallelogram #node-border {
+    border-radius: 2px;
+    background-color: #594d66;
+    border-width: 2px;
+    border-color: #886699;
+}
+
+.mermaid-node-subroutine #node-border {
+    border-radius: 0;
+    background-color: #4d4073;
+    border-width: 3px;
+    border-color: #7766aa;
+}
+
+.mermaid-node-trapezoid #node-border {
+    border-radius: 2px;
+    background-color: #59594d;
+    border-width: 2px;
+    border-color: #888877;
+}
+
+.mermaid-node-cylinder #node-border {
+    border-radius: 6px;
+    background-color: #4d4d73;
+    border-width: 2px;
+    border-color: #7777aa;
+}
+
+/* Class diagram styles */
+.mermaid-class-section {
+    padding: 4px 8px;
+    border-top-width: 1px;
+    border-top-color: #555555;
+    margin-top: 2px;
+}
+
+.mermaid-class-member {
+    font-size: 11px;
+    color: #cccccc;
+    padding: 1px 4px;
+    -unity-font-style: normal;
+}
+
+.mermaid-class-member-abstract {
+    -unity-font-style: italic;
+}
+
+.mermaid-stereotype {
+    font-size: 10px;
+    color: #aaaacc;
+    -unity-font-style: italic;
+    -unity-text-align: middle-center;
+    padding-bottom: 2px;
+}
+
+/* Edge styles */
+.mermaid-edge-solid .edge {
+    border-width: 2px;
+    border-color: #aaaaaa;
+}
+
+.mermaid-edge-dotted .edge {
+    border-width: 2px;
+    border-color: #888888;
+}
+
+.mermaid-edge-thick .edge {
+    border-width: 4px;
+    border-color: #bbbbbb;
+}
+
+/* Edge label */
+.mermaid-edge-label {
+    font-size: 11px;
+    color: #dddddd;
+    background-color: rgba(30, 30, 30, 0.85);
+    padding: 2px 6px;
+    border-radius: 3px;
+    position: absolute;
+    -unity-text-align: middle-center;
+}
+
+/* Sequence diagram: participant box */
+.sequence-participant-box {
+    background-color: #3a5070;
+    border-width: 2px;
+    border-color: #5a80b0;
+    border-radius: 4px;
+    padding: 4px 8px;
+    -unity-text-align: middle-center;
+}
+
+.sequence-participant-box Label {
+    color: #e0e0e0;
+    font-size: 12px;
+    -unity-font-style: bold;
+}
+
+/* Sequence diagram: lifeline */
+.sequence-lifeline {
+    background-color: rgba(180, 180, 180, 0.4);
+    border-left-width: 1px;
+    border-left-color: rgba(180, 180, 180, 0.5);
+}
+
+/* Sequence diagram: arrow */
+.sequence-arrow {
+    overflow: visible;
+}
+
+.sequence-arrow-label {
+    font-size: 11px;
+    color: #cccccc;
+}
+
+.sequence-arrow-dotted {
+    opacity: 0.7;
+}
+
+/* Sequence diagram: block rectangle */
+.sequence-block-rect {
+    border-width: 1px;
+    border-color: rgba(150, 180, 220, 0.5);
+    background-color: rgba(50, 70, 100, 0.15);
+    border-radius: 2px;
+}
+
+.sequence-block-kind {
+    font-size: 10px;
+    -unity-font-style: bold;
+    color: #8ab4f8;
+    background-color: rgba(50, 70, 100, 0.7);
+    padding: 1px 6px;
+    border-radius: 2px;
+}
+
+.sequence-block-label {
+    font-size: 10px;
+    color: #aaaaaa;
+    -unity-font-style: italic;
+}
+
+/* Sequence diagram: note */
+.sequence-note {
+    background-color: #4a4a2a;
+    border-width: 1px;
+    border-color: #8a8a4a;
+    border-radius: 2px;
+    padding: 4px 8px;
+}
+
+.sequence-note Label {
+    font-size: 11px;
+    color: #ddddaa;
+}

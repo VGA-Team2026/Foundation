@@ -76,6 +76,7 @@ Foundation/
 │   │   ├── Prefabs/            # プレハブ
 │   │   └── DataAsset/          # データアセット
 │   ├── Packages/               # Unity パッケージ
+│   │   └── com.mermaid-graphview/  # Mermaid GraphView エディタ拡張
 │   └── Setup/                  # セットアップスクリプト
 ├── spec/                       # 仕様書
 │   ├── code/                   # コード仕様
@@ -150,6 +151,28 @@ LocalData.Save("save_key", saveData);
 // データ読み込み
 var data = LocalData.Load<SaveData>("save_key");
 ```
+
+## エディタ拡張
+
+### Mermaid GraphView
+
+Mermaid 記法のテキストを Unity Editor 内で GraphView を使ってグラフィカルに表示するビューアです。
+
+**メニュー:** `Window > Mermaid Viewer`
+
+**対応ダイアグラム:**
+- Flowchart (`flowchart` / `graph`)
+- StateDiagram (`stateDiagram-v2`)
+- ClassDiagram (`classDiagram`)
+- SequenceDiagram (`sequenceDiagram`)
+
+**機能:**
+- テキスト入力エリアからのライブプレビュー
+- `.mmd` / `.md` ファイルのドラッグ＆ドロップ
+- Sugiyama ベースの自動レイアウト
+- パン・ズーム・選択の標準 GraphView 操作
+
+**パッケージ:** `unity/Packages/com.mermaid-graphview/`
 
 ## 追加機能
 
