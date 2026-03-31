@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace MermaidGraphView
 {
@@ -65,7 +66,7 @@ namespace MermaidGraphView
             {
                 var noteElement = new VisualElement();
                 noteElement.AddToClassList("sequence-note");
-                noteElement.style.position = Position.Absolute;
+                noteElement.style.position = UnityEngine.UIElements.Position.Absolute;
                 noteElement.style.left = note.X;
                 noteElement.style.top = note.Y;
                 noteElement.style.width = note.Width > 0 ? note.Width : 100f;

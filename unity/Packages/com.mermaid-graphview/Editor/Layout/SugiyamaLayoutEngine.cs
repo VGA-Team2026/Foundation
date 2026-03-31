@@ -317,7 +317,7 @@ namespace MermaidGraphView
                 }
 
                 if (connectedPositions.Count > 0)
-                    barycenters[nodeId] = connectedPositions.Average();
+                    barycenters[nodeId] = (float)connectedPositions.Average();
                 else
                     barycenters[nodeId] = positions.ContainsKey(nodeId) ? positions[nodeId] : 0;
             }
