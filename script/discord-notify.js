@@ -32,7 +32,12 @@ const fs = require('fs');
  */
 function sendDiscordWebhook(webhookUrl, payload) {
     return new Promise((resolve, reject) => {
-        const url = new URL(webhookUrl);
+        let url;
+        try {
+            url = new URL(webhookUrl);
+        } catch (e) {
+            return reject(new Error(`Invalid webhook URL: ${e.message}`));
+        }
         const data = JSON.stringify(payload);
 
         const options = {
@@ -40,6 +45,7 @@ function sendDiscordWebhook(webhookUrl, payload) {
             port: 443,
             path: url.pathname + url.search,
             method: 'POST',
+            timeout: 30000,
             headers: {
                 'Content-Type': 'application/json; charset=utf-8',
                 'Content-Length': Buffer.byteLength(data)
@@ -60,6 +66,12 @@ function sendDiscordWebhook(webhookUrl, payload) {
                 }
             });
         });
+
+        req.on('timeout', () => {
+            req.destroy();
+            reject(new Error('Discord webhook request timed out'));
+        });
+
 
         req.on('error', (error) => {
             reject(error);
