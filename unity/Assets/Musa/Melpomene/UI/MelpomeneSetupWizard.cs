@@ -78,6 +78,7 @@ namespace Melpomene
         {
             var url = $"{config.ApiBaseUrl}/issues?state=open&per_page=1";
             var request = UnityWebRequest.Get(url);
+            request.timeout = 10;
             request.SetRequestHeader("Authorization", $"Bearer {config.accessToken}");
             request.SetRequestHeader("Accept", "application/vnd.github+json");
             request.SetRequestHeader("User-Agent", "Melpomene-Unity");
@@ -105,6 +106,14 @@ namespace Melpomene
         }
 
         #endregion
+
+        private void OnDisable()
+        {
+            if (!skipWizard) return;
+            var config = MelpomeneConfig.GetOrCreateConfig();
+            config.skipSetupWizard = true;
+            config.SaveLocalSettings();
+        }
 
         private void InitStyles()
         {
@@ -242,13 +251,16 @@ namespace Melpomene
 
             EditorGUILayout.Space(16);
 
-            // PAT入力
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(40);
-            EditorGUILayout.LabelField("PAT", GUILayout.Width(30));
-            patInput = EditorGUILayout.PasswordField(patInput);
-            GUILayout.Space(40);
-            EditorGUILayout.EndHorizontal();
+            // PAT入力（検証中は編集不可）
+            using (new EditorGUI.DisabledGroupScope(isValidating))
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(40);
+                EditorGUILayout.LabelField("PAT", GUILayout.Width(30));
+                patInput = EditorGUILayout.PasswordField(patInput);
+                GUILayout.Space(40);
+                EditorGUILayout.EndHorizontal();
+            }
 
             // エラーメッセージ
             if (!string.IsNullOrEmpty(validationError))
@@ -302,6 +314,7 @@ namespace Melpomene
             validationError = null;
 
             var request = UnityWebRequest.Get("https://api.github.com/user");
+            request.timeout = 10;
             request.SetRequestHeader("Authorization", $"Bearer {patInput}");
             request.SetRequestHeader("User-Agent", "Melpomene-Unity");
 

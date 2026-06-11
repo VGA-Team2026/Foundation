@@ -101,22 +101,24 @@ public class MusaDocumentExplorer : EditorWindow
         EditorGUILayout.LabelField("Categories", EditorStyles.boldLabel);
         EditorGUILayout.Space(4);
 
-        if (categoryNames == null || categoryNames.Length == 0)
+        var hasCategories = categoryNames != null && categoryNames.Length > 0;
+        if (!hasCategories)
         {
             EditorGUILayout.HelpBox("spec/ が見つかりません", MessageType.Warning);
-            return;
         }
-
-        sidebarScrollPosition = EditorGUILayout.BeginScrollView(sidebarScrollPosition);
-        for (int i = 0; i < categoryNames.Length; i++)
+        else
         {
-            var style = i == selectedCategoryIndex ? sidebarActiveButtonStyle : sidebarButtonStyle;
-            if (GUILayout.Button(categoryNames[i], style))
+            sidebarScrollPosition = EditorGUILayout.BeginScrollView(sidebarScrollPosition);
+            for (int i = 0; i < categoryNames.Length; i++)
             {
-                SelectCategory(i);
+                var style = i == selectedCategoryIndex ? sidebarActiveButtonStyle : sidebarButtonStyle;
+                if (GUILayout.Button(categoryNames[i], style))
+                {
+                    SelectCategory(i);
+                }
             }
+            EditorGUILayout.EndScrollView();
         }
-        EditorGUILayout.EndScrollView();
 
         GUILayout.FlexibleSpace();
 
@@ -124,8 +126,20 @@ public class MusaDocumentExplorer : EditorWindow
         {
             MusaDocumentBrowser.RefreshCache();
             categoryNames = MusaDocumentBrowser.GetCategories();
-            if (selectedCategoryIndex >= 0)
-                SelectCategory(selectedCategoryIndex);
+            var prevIndex = selectedCategoryIndex;
+            selectedCategoryIndex = -1;
+            if (prevIndex >= 0 && prevIndex < categoryNames.Length)
+            {
+                SelectCategory(prevIndex);
+            }
+            else
+            {
+                fileTree.Clear();
+                selectedFilePath = null;
+                fileContent = null;
+                treeScrollPosition = Vector2.zero;
+                contentScrollPosition = Vector2.zero;
+            }
         }
     }
 
@@ -190,7 +204,7 @@ public class MusaDocumentExplorer : EditorWindow
                 {
                     selectedFilePath = node.FullPath;
                     fileContent = MusaDocumentBrowser.ReadDocContent(node.FullPath);
-                    thaleiaRenderer.Parse(fileContent);
+                    thaleiaRenderer.Parse(fileContent ?? string.Empty);
                     contentScrollPosition = Vector2.zero;
                 }
                 EditorGUILayout.EndHorizontal();
@@ -207,6 +221,12 @@ public class MusaDocumentExplorer : EditorWindow
         if (string.IsNullOrEmpty(selectedFilePath))
         {
             EditorGUILayout.HelpBox("ファイルを選択してください", MessageType.Info);
+            return;
+        }
+
+        if (fileContent == null)
+        {
+            EditorGUILayout.HelpBox("ドキュメントの読み込みに失敗しました", MessageType.Warning);
             return;
         }
 

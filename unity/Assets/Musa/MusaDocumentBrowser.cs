@@ -87,7 +87,15 @@ public static class MusaDocumentBrowser
     public static string ReadDocContent(string mdPath)
     {
         if (string.IsNullOrEmpty(mdPath) || !File.Exists(mdPath)) return null;
-        return File.ReadAllText(mdPath);
+        try
+        {
+            return File.ReadAllText(mdPath);
+        }
+        catch (System.Exception ex)
+        {
+            UnityEngine.Debug.LogWarning($"Failed to read doc: {mdPath}\n{ex}");
+            return null;
+        }
     }
 
     /// <summary>
@@ -99,7 +107,6 @@ public static class MusaDocumentBrowser
         var specRoot = GetSpecRootPath();
         if (!Directory.Exists(specRoot)) return;
 
-        var codePath = Path.Combine(specRoot, "code");
         var allMdFiles = Directory.GetFiles(specRoot, "*.md", SearchOption.AllDirectories);
 
         foreach (var mdFile in allMdFiles)
